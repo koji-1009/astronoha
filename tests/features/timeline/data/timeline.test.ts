@@ -312,6 +312,27 @@ describe("mergeTimelineEntries", () => {
 		});
 	});
 
+	it("handles speech with null date and null speaker", () => {
+		const speech = makeSpeech({ date: null, speaker: null });
+		const entries = mergeTimelineEntries([speech], []);
+
+		expect(entries[0].date).toBe("");
+		expect(entries[0].speaker).toBeUndefined();
+	});
+
+	it("handles book with missing optional fields", () => {
+		const book = makeBook({
+			author: undefined,
+			publisher: undefined,
+			identifier: undefined,
+		});
+		const entries = mergeTimelineEntries([], [book]);
+
+		expect(entries[0].author).toBeUndefined();
+		expect(entries[0].publisher).toBeUndefined();
+		expect(entries[0].identifier).toBeUndefined();
+	});
+
 	it("maps book fields correctly", () => {
 		const book = makeBook({
 			title: "日本経済史",
@@ -493,6 +514,39 @@ describe("getTimelineData", () => {
 		expect(result.totalSpeeches).toBe(1);
 		expect(result.totalPublications).toBe(0);
 		expect(result.warnings).toHaveLength(2);
+	});
+
+	it("handles non-Error thrown by kokkai API", async () => {
+		kokkaiSearch.mockRejectedValue("string error");
+		teikokuSearch.mockResolvedValue(makeSpeechResponse([]));
+		searchBooksByYear.mockResolvedValue(makeBookResponse([]));
+
+		const result = await getTimelineData("テスト", "2024-01");
+
+		expect(result.warnings).toHaveLength(1);
+		expect(result.warnings[0]).toContain("不明なエラー");
+	});
+
+	it("handles non-Error thrown by teikoku API", async () => {
+		kokkaiSearch.mockResolvedValue(makeSpeechResponse([]));
+		teikokuSearch.mockRejectedValue(42);
+		searchBooksByYear.mockResolvedValue(makeBookResponse([]));
+
+		const result = await getTimelineData("テスト", "2024-01");
+
+		expect(result.warnings).toHaveLength(1);
+		expect(result.warnings[0]).toContain("不明なエラー");
+	});
+
+	it("handles non-Error thrown by NDL Search API", async () => {
+		kokkaiSearch.mockResolvedValue(makeSpeechResponse([]));
+		teikokuSearch.mockResolvedValue(makeSpeechResponse([]));
+		searchBooksByYear.mockRejectedValue(null);
+
+		const result = await getTimelineData("テスト", "2024-01");
+
+		expect(result.warnings).toHaveLength(1);
+		expect(result.warnings[0]).toContain("不明なエラー");
 	});
 
 	it("throws on invalid period format", async () => {

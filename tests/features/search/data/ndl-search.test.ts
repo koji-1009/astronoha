@@ -221,6 +221,111 @@ describe("searchBooks", () => {
 	});
 });
 
+describe("classifyIdentifiers (via parseOpenSearchResponse)", () => {
+	it("classifies ISBN identifiers", () => {
+		const xmlWithIsbn = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <openSearch:totalResults>1</openSearch:totalResults>
+    <openSearch:startIndex>1</openSearch:startIndex>
+    <openSearch:itemsPerPage>1</openSearch:itemsPerPage>
+    <item>
+      <title>テスト本</title>
+      <link>https://example.com</link>
+      <dc:identifier>978-4-00-000001-1</dc:identifier>
+    </item>
+  </channel>
+</rss>`;
+
+		const result = parseOpenSearchResponse(xmlWithIsbn);
+		expect(result.items[0].isbn).toBe("978-4-00-000001-1");
+		expect(result.items[0].identifier).toBe("978-4-00-000001-1");
+	});
+
+	it("classifies JP number identifiers", () => {
+		const xmlWithJp = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <openSearch:totalResults>1</openSearch:totalResults>
+    <openSearch:startIndex>1</openSearch:startIndex>
+    <openSearch:itemsPerPage>1</openSearch:itemsPerPage>
+    <item>
+      <title>テスト本</title>
+      <link>https://example.com</link>
+      <dc:identifier>JP12345678</dc:identifier>
+    </item>
+  </channel>
+</rss>`;
+
+		const result = parseOpenSearchResponse(xmlWithJp);
+		expect(result.items[0].jpNumber).toBe("JP12345678");
+		expect(result.items[0].identifier).toBe("JP12345678");
+	});
+
+	it("classifies multiple identifiers (ISBN + JP + other)", () => {
+		const xmlWithMultiple = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <openSearch:totalResults>1</openSearch:totalResults>
+    <openSearch:startIndex>1</openSearch:startIndex>
+    <openSearch:itemsPerPage>1</openSearch:itemsPerPage>
+    <item>
+      <title>テスト本</title>
+      <link>https://example.com</link>
+      <dc:identifier>000007464904</dc:identifier>
+      <dc:identifier>9784000000011</dc:identifier>
+      <dc:identifier>JP99999999</dc:identifier>
+    </item>
+  </channel>
+</rss>`;
+
+		const result = parseOpenSearchResponse(xmlWithMultiple);
+		expect(result.items[0].identifier).toBe("000007464904");
+		expect(result.items[0].isbn).toBe("9784000000011");
+		expect(result.items[0].jpNumber).toBe("JP99999999");
+	});
+});
+
+describe("toStr and extractIdentifiers edge cases (via parseOpenSearchResponse)", () => {
+	it("handles numeric dc:date as string", () => {
+		const xmlWithNumericDate = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <openSearch:totalResults>1</openSearch:totalResults>
+    <openSearch:startIndex>1</openSearch:startIndex>
+    <openSearch:itemsPerPage>1</openSearch:itemsPerPage>
+    <item>
+      <title>テスト</title>
+      <link>https://example.com</link>
+      <dc:date>2024</dc:date>
+    </item>
+  </channel>
+</rss>`;
+
+		const result = parseOpenSearchResponse(xmlWithNumericDate);
+		expect(result.items[0].date).toBe("2024");
+	});
+
+	it("handles single non-array dc:identifier", () => {
+		const xmlWithSingleId = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <openSearch:totalResults>1</openSearch:totalResults>
+    <openSearch:startIndex>1</openSearch:startIndex>
+    <openSearch:itemsPerPage>1</openSearch:itemsPerPage>
+    <item>
+      <title>テスト</title>
+      <link>https://example.com</link>
+      <dc:identifier>SINGLE-ID</dc:identifier>
+    </item>
+  </channel>
+</rss>`;
+
+		const result = parseOpenSearchResponse(xmlWithSingleId);
+		expect(result.items[0].identifier).toBe("SINGLE-ID");
+	});
+});
+
 describe("searchBooksByYear", () => {
 	it("constructs correct URL for SRU with year range", async () => {
 		mockFetch.mockResolvedValueOnce(new Response(sruXml, { status: 200 }));
