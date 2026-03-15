@@ -94,7 +94,7 @@ export const ui = {
 	// ----------------------------------------------------------------
 	settings: {
 		title: "設定",
-		description: "カラーモードやLLM自動要約などの設定を変更します。",
+		description: "カラーモードやブラウザAIアシスタントの設定を変更します。",
 		colorMode: "カラーモード",
 		colorModeDescription:
 			"ライトモード、ダークモード、またはシステム設定に従うかを選択します。",
@@ -104,10 +104,10 @@ export const ui = {
 		colorModeSystemShort: "システム",
 		colorModeLightShort: "ライト",
 		colorModeDarkShort: "ダーク",
-		autoSummary: "LLM自動要約",
+		autoSummary: "ブラウザAIアシスタント",
 		autoSummaryDescription:
-			"Chrome built-in AI対応ブラウザで、発言テキストの自動要約を有効にします。",
-		autoSummaryDetail: "発言ページを開いたときに自動で要約を生成する",
+			"Chrome built-in AI対応ブラウザで、発言の要約・時代背景・傾向分析などのAI機能を有効にします。",
+		autoSummaryDetail: "各ページでAIアシスタント機能を利用する",
 		chromeAiRequired: "Chrome（デスクトップ版）のブラウザAI機能を使用します",
 		saveButton: "設定を保存",
 		saving: "保存中...",
