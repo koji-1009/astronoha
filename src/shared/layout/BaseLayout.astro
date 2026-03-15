@@ -1,7 +1,7 @@
 ---
 /**
  * Base layout for all pages. Color tokens are defined in global.css.
- * Color mode preference is read from cookie via inline script to avoid FOUC.
+ * Color mode is set server-side on <html> from Astro.locals.settings.
  *
  * Props:
  *   title       — Page title (appended with " | astronoha")
@@ -19,6 +19,7 @@ interface Props {
 }
 
 const { title, description } = Astro.props;
+const colorMode = Astro.locals.settings.colorMode;
 
 // Canonical URL: normalize page=1 → remove page param (default)
 const canonicalUrl = new URL(Astro.url);
@@ -27,7 +28,10 @@ if (canonicalUrl.searchParams.get("page") === "1") {
 }
 ---
 
-<html lang="ja">
+<html
+	lang="ja"
+	{...(colorMode !== "system" && { "data-color-mode": colorMode })}
+>
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -35,39 +39,6 @@ if (canonicalUrl.searchParams.get("page") === "1") {
 		<meta name="description" content={description}>
 		<link rel="canonical" href={canonicalUrl.href}>
 		<ClientRouter />
-		<!-- Inline: apply color mode immediately to prevent FOUC -->
-		<script is:inline>
-		(function () {
-			try {
-				var c = document.cookie.match(/astronoha_settings=([^;]+)/);
-				var s = c ? JSON.parse(atob(c[1])) : null;
-				if (s && (s.colorMode === "light" || s.colorMode === "dark")) {
-					document.documentElement.setAttribute("data-color-mode", s.colorMode);
-				} else {
-					document.documentElement.removeAttribute("data-color-mode");
-				}
-			} catch (e) {}
-		})();
-		</script>
-		<!-- Module: re-apply on ClientRouter navigation -->
-		<script>
-		document.addEventListener("astro:page-load", () => {
-			try {
-				const c = document.cookie.match(/astronoha_settings=([^;]+)/);
-				if (c) {
-					const s = JSON.parse(atob(c[1]));
-					if (s.colorMode === "light" || s.colorMode === "dark") {
-						document.documentElement.setAttribute(
-							"data-color-mode",
-							s.colorMode,
-						);
-						return;
-					}
-				}
-				document.documentElement.removeAttribute("data-color-mode");
-			} catch {}
-		});
-		</script>
 	</head>
 	<body>
 		<a href="#main-content" class="skip-link">{ui.nav.skipToContent}</a>
