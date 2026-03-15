@@ -8,4 +8,7 @@ export default defineConfig({
 		imageService: "passthrough",
 	}),
 	integrations: [react()],
+	build: {
+		inlineStylesheets: "always",
+	},
 });
