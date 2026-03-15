@@ -9,3 +9,9 @@ updates:
     minimum-release-age: 3
     ignore:
       - dependency-name: "@biomejs/biome"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
