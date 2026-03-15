@@ -65,7 +65,11 @@ function inlineMarkdown(text: string): string {
 		.replace(/`(.+?)`/g, "<code>$1</code>");
 }
 
+type LlmAction = "summary" | "keywords" | "context" | "trend";
+
 interface LlmPanelProps {
+	/** Actions to display. Each action requires corresponding data props. */
+	actions: LlmAction[];
 	speechText?: string;
 	keyword?: string;
 	year?: number;
@@ -90,6 +94,7 @@ const SYSTEM_PROMPTS = {
 	summary: ui.llm.promptSummarize,
 	keywords: (keyword: string) => ui.llm.promptSuggestKeywords(keyword),
 	context: (year: number) => ui.llm.promptHistoricalContext(String(year)),
+	trend: (keyword: string) => ui.llm.promptAnalyzeTrend(keyword),
 };
 
 const MAX_RETRIES = 60;
@@ -150,7 +155,12 @@ function loadResult(action: string): string {
 	}
 }
 
-function LlmPanelInner({ speechText, keyword, year }: LlmPanelProps) {
+function LlmPanelInner({
+	actions: enabledActions,
+	speechText,
+	keyword,
+	year,
+}: LlmPanelProps) {
 	const [state, setState] = useState<LlmState>({
 		status: "checking",
 		loading: false,
@@ -299,7 +309,16 @@ function LlmPanelInner({ speechText, keyword, year }: LlmPanelProps) {
 		);
 	}
 
-	if (!speechText && !keyword && year === undefined) {
+	function handleTrend() {
+		if (!keyword) return;
+		runAction(
+			"trend",
+			SYSTEM_PROMPTS.trend(keyword),
+			`「${keyword}」の議会での使用頻度の傾向を分析してください`,
+		);
+	}
+
+	if (enabledActions.length === 0) {
 		return null;
 	}
 
@@ -430,7 +449,7 @@ function LlmPanelInner({ speechText, keyword, year }: LlmPanelProps) {
 						gap: "var(--md-sys-spacing-2)",
 					}}
 				>
-					{speechText && (
+					{enabledActions.includes("summary") && speechText && (
 						<button
 							type="button"
 							className="outlined"
@@ -442,7 +461,7 @@ function LlmPanelInner({ speechText, keyword, year }: LlmPanelProps) {
 								: ui.llm.summarize}
 						</button>
 					)}
-					{keyword && (
+					{enabledActions.includes("keywords") && keyword && (
 						<button
 							type="button"
 							className="outlined"
@@ -454,7 +473,7 @@ function LlmPanelInner({ speechText, keyword, year }: LlmPanelProps) {
 								: ui.llm.suggestKeywords}
 						</button>
 					)}
-					{year !== undefined && (
+					{enabledActions.includes("context") && year !== undefined && (
 						<button
 							type="button"
 							className="outlined"
@@ -464,6 +483,18 @@ function LlmPanelInner({ speechText, keyword, year }: LlmPanelProps) {
 							{state.loading && state.activeAction === "context"
 								? ui.llm.generating
 								: ui.llm.historicalContext}
+						</button>
+					)}
+					{enabledActions.includes("trend") && keyword && (
+						<button
+							type="button"
+							className="outlined"
+							disabled={state.loading}
+							onClick={handleTrend}
+						>
+							{state.loading && state.activeAction === "trend"
+								? ui.llm.analyzing
+								: ui.llm.analyzeTrend}
 						</button>
 					)}
 				</div>

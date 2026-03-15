@@ -10,6 +10,7 @@
  */
 
 import DeferredHeatmap from "@/features/search/components/DeferredHeatmap.astro";
+import LlmPanel from "@/features/search/components/LlmPanel";
 import { ui } from "@/i18n/ui";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
 
@@ -70,6 +71,10 @@ const targetLabel =
 				<p class="progress-label">ヒートマップデータを読み込み中…</p>
 			</div>
 		</DeferredHeatmap>
+
+		<section class="llm-section">
+			<LlmPanel client:idle actions={["trend"]} keyword={decodedKeyword} />
+		</section>
 	</div>
 </BaseLayout>
 

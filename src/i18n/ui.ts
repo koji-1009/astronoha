@@ -179,6 +179,10 @@ export const ui = {
 			`${keyword}について、議会で使われていた可能性のある別の表現を3つ提案してください`,
 		promptHistoricalContext: (year: string) =>
 			`${year}年頃の日本の政治的・社会的背景を2文で説明してください`,
+		analyzeTrend: "傾向を分析",
+		analyzing: "分析中...",
+		promptAnalyzeTrend: (keyword: string) =>
+			`「${keyword}」という言葉の議会での使用頻度の変遷について、日本の政治・社会的背景を踏まえて分析してください`,
 		disclaimer:
 			"AIの回答には誤りが含まれる可能性があります。正確な情報は原文や公式資料をご確認ください。",
 	},

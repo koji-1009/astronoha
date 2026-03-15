@@ -167,7 +167,7 @@ function splitParagraphs(text: string): string[] {
 
 		{speech && (
 			<section class="llm-section">
-				<LlmPanel client:idle speechText={speech.speech} keyword={decodedKeyword} year={speechYear} />
+				<LlmPanel client:idle actions={["summary", "keywords", "context"]} speechText={speech.speech} keyword={decodedKeyword} year={speechYear} />
 			</section>
 		)}
 	</div>

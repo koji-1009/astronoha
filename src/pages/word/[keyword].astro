@@ -250,7 +250,7 @@ if (searchTarget !== "both") {
 		</DeferredBookList>
 
 		<section class="llm-section">
-			<LlmPanel client:idle keyword={decodedKeyword} />
+			<LlmPanel client:idle actions={["keywords"]} keyword={decodedKeyword} />
 		</section>
 	</div>
 </BaseLayout>
