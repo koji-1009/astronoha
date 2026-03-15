@@ -7,3 +7,5 @@ updates:
     open-pull-requests-limit: 10
     versioning-strategy: increase
     minimum-release-age: 3
+    ignore:
+      - dependency-name: "@biomejs/biome"
