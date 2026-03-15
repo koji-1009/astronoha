@@ -4,6 +4,10 @@
  *
  * CRZ Layer 1-2: Pure server-rendered. Filter state comes from URL query params.
  * No client-side JavaScript required.
+ *
+ * Desktop (840px+): Speeches left, publications right of a center timeline line.
+ * Mobile: Single column with line on the left.
+ * Entries are grouped by date with date headers on the timeline.
  */
 
 import { ui } from "@/i18n/ui";
@@ -34,6 +38,26 @@ const sortedEntries = [...filteredEntries].sort((a, b) =>
 const speechCount = entries.filter((e) => e.type === "speech").length;
 const publicationCount = entries.filter((e) => e.type === "publication").length;
 
+// Group sorted entries by date for date headers
+const dateGroups: Array<{
+	date: string;
+	formatted: string;
+	entries: TimelineEntry[];
+}> = [];
+for (const entry of sortedEntries) {
+	const dateKey = entry.date || "";
+	const last = dateGroups[dateGroups.length - 1];
+	if (last && last.date === dateKey) {
+		last.entries.push(entry);
+	} else {
+		dateGroups.push({
+			date: dateKey,
+			formatted: dateKey ? formatDate(dateKey) : ui.timeline.unknownDate,
+			entries: [entry],
+		});
+	}
+}
+
 /**
  * Build filter URL preserving the existing `q` query param.
  */
@@ -51,10 +75,8 @@ function filterHref(target: "all" | "speeches" | "publications"): string {
 	<p class="empty-message">{ui.timeline.noData}</p>
 ) : (
 	<div class="timeline-scroll">
-		{/* Header */}
+		{/* Filter tabs */}
 		<div class="timeline-header">
-			<h3 class="timeline-title">{ui.timeline.title}: {period}</h3>
-			{/* Filter links */}
 			<div class="filter-links">
 				<a
 					href={filterHref("all")}
@@ -79,56 +101,74 @@ function filterHref(target: "all" | "speeches" | "publications"): string {
 			</div>
 		</div>
 
+		{/* Lane labels — desktop only */}
+		<div class="lane-labels" aria-hidden="true">
+			<span class="lane-label lane-label--left">{ui.timeline.typeSpeech}</span>
+			<span class="lane-label lane-label--right">{ui.timeline.typePublication}</span>
+		</div>
+
 		{/* Timeline */}
 		<div class="timeline-container">
-			{/* Vertical line */}
 			<div class="timeline-line" />
 
-			{sortedEntries.map((entry) => {
-				const isSpeech = entry.type === "speech";
-				const href = isSpeech
-					? `/word/${encodeURIComponent(keyword)}/${entry.speechId}`
-					: entry.link;
-
-				return (
-					<div class="timeline-entry">
-						{/* Dot on the timeline */}
-						<div class:list={["timeline-dot", isSpeech ? "timeline-dot--speech" : "timeline-dot--publication"]} />
-
-						{/* Entry card */}
-						<a
-							href={href}
-							{...(isSpeech ? {} : { target: "_blank", rel: "noopener noreferrer" })}
-							class="entry-card-link"
-						>
-							<div class:list={["card", "entry-card", isSpeech ? "entry-card--speech" : "entry-card--publication"]}>
-								{/* Date */}
-								<p class="entry-date">
-									{formatDate(entry.date)}
-									{isSpeech ? ` - ${ui.timeline.typeSpeech}` : ` - ${ui.timeline.typePublication}`}
-								</p>
-
-								{/* Title */}
-								<p class="entry-title">{entry.title}</p>
-
-								{/* Metadata */}
-								{isSpeech && entry.speaker && (
-									<p class="entry-meta">
-										{entry.speaker}
-										{entry.house ? ` (${entry.house})` : ""}
-									</p>
-								)}
-								{!isSpeech && entry.author && (
-									<p class="entry-meta">{entry.author}</p>
-								)}
-								{!isSpeech && (
-									<p class="entry-external-hint">{ui.timeline.viewOnNdlSearch} ↗</p>
-								)}
-							</div>
-						</a>
+			{dateGroups.map((group) => (
+				<div class="date-group">
+					<div class="date-header">
+						<span class="date-label">{group.formatted}</span>
 					</div>
-				);
-			})}
+
+					{group.entries.map((entry) => {
+						const isSpeech = entry.type === "speech";
+						const href = isSpeech
+							? `/word/${encodeURIComponent(keyword)}/${entry.speechId}`
+							: entry.link;
+
+						return (
+							<div class:list={[
+								"timeline-entry",
+								isSpeech ? "timeline-entry--left" : "timeline-entry--right",
+							]}>
+								<div class:list={[
+									"timeline-dot",
+									isSpeech ? "timeline-dot--speech" : "timeline-dot--publication",
+								]} />
+
+								<a
+									href={href}
+									{...(isSpeech ? {} : { target: "_blank", rel: "noopener noreferrer" })}
+									class="entry-card-link"
+								>
+									<div class:list={[
+										"card",
+										"entry-card",
+										isSpeech ? "entry-card--speech" : "entry-card--publication",
+									]}>
+										<span class:list={[
+											"entry-type",
+											isSpeech ? "entry-type--speech" : "entry-type--publication",
+										]}>
+											{isSpeech ? ui.timeline.typeSpeech : ui.timeline.typePublication}
+										</span>
+										<p class="entry-title">{entry.title}</p>
+										{isSpeech && entry.speaker && (
+											<p class="entry-meta">
+												{entry.speaker}
+												{entry.house ? ` (${entry.house})` : ""}
+											</p>
+										)}
+										{!isSpeech && entry.author && (
+											<p class="entry-meta">{entry.author}</p>
+										)}
+										{!isSpeech && (
+											<p class="entry-external-hint">{ui.timeline.viewOnNdlSearch} ↗</p>
+										)}
+									</div>
+								</a>
+							</div>
+						);
+					})}
+				</div>
+			))}
 		</div>
 
 		{/* Summary */}
@@ -150,25 +190,16 @@ function filterHref(target: "all" | "speeches" | "publications"): string {
 	flex-direction: column;
 }
 
-.timeline-header {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: space-between;
-	align-items: center;
-	gap: var(--md-sys-spacing-3);
-	margin-bottom: var(--md-sys-spacing-4);
-}
+/* ── Filter tabs ── */
 
-.timeline-title {
-	font-size: var(--md-sys-typescale-title-medium-size);
-	font-weight: var(--md-sys-typescale-title-medium-weight);
-	line-height: var(--md-sys-typescale-title-medium-line-height);
-	color: var(--md-sys-color-on-surface);
+.timeline-header {
+	margin-bottom: var(--md-sys-spacing-4);
 }
 
 .filter-links {
 	display: flex;
 	gap: var(--md-sys-spacing-2);
+	flex-wrap: wrap;
 }
 
 .filter-link {
@@ -214,11 +245,17 @@ function filterHref(target: "all" | "speeches" | "publications"): string {
 	background-color: var(--md-sys-color-tertiary);
 }
 
+/* ── Lane labels (desktop only) ── */
+
+.lane-labels {
+	display: none;
+}
+
+/* ── Timeline container ── */
+
 .timeline-container {
 	position: relative;
 	padding-left: var(--md-sys-spacing-8);
-	max-height: 600px;
-	overflow-y: auto;
 }
 
 .timeline-line {
@@ -230,17 +267,46 @@ function filterHref(target: "all" | "speeches" | "publications"): string {
 	background-color: var(--md-sys-color-outline-variant);
 }
 
+/* ── Date groups ── */
+
+.date-group {
+	padding-top: var(--md-sys-spacing-4);
+}
+
+.date-group:first-child {
+	padding-top: 0;
+}
+
+.date-header {
+	position: relative;
+	z-index: 1;
+	margin-bottom: var(--md-sys-spacing-3);
+}
+
+.date-label {
+	display: inline-block;
+	font-size: var(--md-sys-typescale-label-large-size);
+	font-weight: var(--md-sys-typescale-label-large-weight);
+	line-height: var(--md-sys-typescale-label-large-line-height);
+	color: var(--md-sys-color-on-surface);
+	background: var(--md-sys-color-surface-container);
+	padding: var(--md-sys-spacing-1) var(--md-sys-spacing-3);
+	border-radius: var(--md-sys-shape-corner-full);
+}
+
+/* ── Timeline entries ── */
+
 .timeline-entry {
 	position: relative;
-	margin-bottom: var(--md-sys-spacing-4);
+	margin-bottom: var(--md-sys-spacing-3);
 }
 
 .timeline-dot {
 	position: absolute;
-	left: calc(-1 * var(--md-sys-spacing-8) + 8px);
-	top: var(--md-sys-spacing-2);
-	width: 10px;
-	height: 10px;
+	left: calc(-1 * var(--md-sys-spacing-8) + 7px);
+	top: var(--md-sys-spacing-3);
+	width: 12px;
+	height: 12px;
 	border-radius: var(--md-sys-shape-corner-full);
 	border: 2px solid var(--md-sys-color-surface);
 	z-index: 1;
@@ -254,6 +320,8 @@ function filterHref(target: "all" | "speeches" | "publications"): string {
 	background-color: var(--md-sys-color-tertiary);
 }
 
+/* ── Entry cards ── */
+
 .entry-card-link {
 	display: block;
 	text-decoration: none;
@@ -261,7 +329,14 @@ function filterHref(target: "all" | "speeches" | "publications"): string {
 }
 
 .entry-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-1);
 	transition: box-shadow 0.2s;
+}
+
+.entry-card:hover {
+	box-shadow: var(--md-sys-elevation-2);
 }
 
 .entry-card--speech {
@@ -272,19 +347,30 @@ function filterHref(target: "all" | "speeches" | "publications"): string {
 	border-left: 3px solid var(--md-sys-color-tertiary);
 }
 
-.entry-date {
-	font-size: var(--md-sys-typescale-label-medium-size);
-	font-weight: var(--md-sys-typescale-label-medium-weight);
-	line-height: var(--md-sys-typescale-label-medium-line-height);
-	color: var(--md-sys-color-on-surface-variant);
-	margin-bottom: var(--md-sys-spacing-1);
+.entry-type {
+	display: inline-block;
+	font-size: var(--md-sys-typescale-label-small-size);
+	font-weight: var(--md-sys-typescale-label-small-weight);
+	line-height: var(--md-sys-typescale-label-small-line-height);
+	padding: 1px var(--md-sys-spacing-2);
+	border-radius: var(--md-sys-shape-corner-extra-small);
+	width: fit-content;
+}
+
+.entry-type--speech {
+	color: var(--md-sys-color-on-primary-container);
+	background: var(--md-sys-color-primary-container);
+}
+
+.entry-type--publication {
+	color: var(--md-sys-color-on-tertiary-container);
+	background: var(--md-sys-color-tertiary-container);
 }
 
 .entry-title {
 	font-size: var(--md-sys-typescale-body-large-size);
 	line-height: var(--md-sys-typescale-body-large-line-height);
 	color: var(--md-sys-color-on-surface);
-	margin-bottom: var(--md-sys-spacing-1);
 }
 
 .entry-meta {
@@ -297,13 +383,101 @@ function filterHref(target: "all" | "speeches" | "publications"): string {
 	font-size: var(--md-sys-typescale-label-small-size);
 	font-weight: var(--md-sys-typescale-label-small-weight);
 	color: var(--md-sys-color-tertiary);
-	margin-top: var(--md-sys-spacing-1);
 }
 
+/* ── Summary ── */
+
 .timeline-summary {
-	margin-top: var(--md-sys-spacing-3);
+	margin-top: var(--md-sys-spacing-4);
 	font-size: var(--md-sys-typescale-body-small-size);
 	line-height: var(--md-sys-typescale-body-small-line-height);
 	color: var(--md-sys-color-on-surface-variant);
+}
+
+/* ── Desktop: left/right alternating layout ── */
+
+@media (min-width: 840px) {
+	.lane-labels {
+		display: flex;
+		justify-content: space-between;
+		padding: 0 var(--md-sys-spacing-6);
+		margin-bottom: var(--md-sys-spacing-3);
+	}
+
+	.lane-label {
+		font-size: var(--md-sys-typescale-label-large-size);
+		font-weight: var(--md-sys-typescale-label-large-weight);
+		line-height: var(--md-sys-typescale-label-large-line-height);
+		letter-spacing: var(--md-sys-typescale-label-large-tracking);
+		color: var(--md-sys-color-on-surface-variant);
+		text-transform: uppercase;
+	}
+
+	.lane-label--left {
+		color: var(--md-sys-color-primary);
+	}
+
+	.lane-label--right {
+		color: var(--md-sys-color-tertiary);
+	}
+
+	.timeline-container {
+		padding-left: 0;
+	}
+
+	.timeline-line {
+		left: 50%;
+		transform: translateX(-50%);
+	}
+
+	/* Date header centered on the line */
+	.date-header {
+		display: flex;
+		justify-content: center;
+	}
+
+	.date-label {
+		border: 1px solid var(--md-sys-color-outline-variant);
+	}
+
+	/* Entries positioned left or right */
+	.timeline-entry {
+		display: flex;
+	}
+
+	.timeline-entry--left {
+		justify-content: flex-end;
+		padding-right: calc(50% + var(--md-sys-spacing-5));
+	}
+
+	.timeline-entry--right {
+		justify-content: flex-start;
+		padding-left: calc(50% + var(--md-sys-spacing-5));
+	}
+
+	/* Dot always centered on the line */
+	.timeline-dot {
+		left: calc(50% - 6px);
+		top: var(--md-sys-spacing-3);
+	}
+
+	/* Speech cards: border on the right (facing the line) */
+	.entry-card--speech {
+		border-left: none;
+		border-right: 3px solid var(--md-sys-color-primary);
+	}
+
+	/* Publication cards: border-left stays (facing the line) */
+}
+
+@media (max-width: 599px) {
+	.filter-links {
+		gap: var(--md-sys-spacing-1);
+	}
+
+	.filter-link {
+		padding: var(--md-sys-spacing-1) var(--md-sys-spacing-2);
+		font-size: var(--md-sys-typescale-label-medium-size);
+	}
 }
 </style>

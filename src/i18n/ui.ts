@@ -83,6 +83,7 @@ export const ui = {
 		displayCount: (shown: number, total: number) =>
 			`${shown}件を表示中（全${total}件）`,
 		noData: "この期間のデータがありません",
+		unknownDate: "日付不明",
 		viewOnNdlSearch: "NDLサーチで見る",
 		description:
 			"議会の議事録とNDLサーチの出版物を日付軸で重ね合わせ、ある言葉が議会で議論された時期にどんな書籍が出版されたかを閲覧できます。",
