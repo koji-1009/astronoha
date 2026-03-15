@@ -33,8 +33,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
 	const response = await next();
 
 	// CDN page cache: most pages render identical HTML for all users
-	// (colorMode is applied client-side via inline script, search target is URL-driven).
-	// Excluded: POST/Action responses (method check) and /settings (personalized SSR).
+	// (colorMode is applied client-side via localStorage, search target is URL-driven).
+	// Excluded: POST/Action responses (method check) and /settings (form shows user's current values).
 	if (
 		context.request.method === "GET" &&
 		!context.url.pathname.startsWith("/settings")

@@ -85,6 +85,10 @@ const formError = result?.error ? ui.settings.saveFailed : null;
 			</form>
 		</div>
 	</div>
+	<!-- Sync server-side colorMode to localStorage for client-side application -->
+	<script is:inline define:vars={{ colorMode: settings.colorMode }}>
+	localStorage.setItem("astronoha_colorMode", colorMode);
+	</script>
 </BaseLayout>
 
 <style>

@@ -1,7 +1,7 @@
 ---
 /**
  * Base layout for all pages. Color tokens are defined in global.css.
- * Color mode is set server-side on <html> from Astro.locals.settings.
+ * Color mode is applied client-side from localStorage to preserve CDN cacheability.
  *
  * Props:
  *   title       — Page title (appended with " | astronoha")
@@ -19,7 +19,6 @@ interface Props {
 }
 
 const { title, description } = Astro.props;
-const colorMode = Astro.locals.settings.colorMode;
 
 // Canonical URL: normalize page=1 → remove page param (default)
 const canonicalUrl = new URL(Astro.url);
@@ -28,10 +27,7 @@ if (canonicalUrl.searchParams.get("page") === "1") {
 }
 ---
 
-<html
-	lang="ja"
-	{...(colorMode !== "system" && { "data-color-mode": colorMode })}
->
+<html lang="ja">
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -39,6 +35,14 @@ if (canonicalUrl.searchParams.get("page") === "1") {
 		<meta name="description" content={description}>
 		<link rel="canonical" href={canonicalUrl.href}>
 		<ClientRouter />
+		<script is:inline>
+		(function () {
+			var m = localStorage.getItem("astronoha_colorMode");
+			if (m === "light" || m === "dark") {
+				document.documentElement.setAttribute("data-color-mode", m);
+			}
+		})();
+		</script>
 	</head>
 	<body>
 		<a href="#main-content" class="skip-link">{ui.nav.skipToContent}</a>
