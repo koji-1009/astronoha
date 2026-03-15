@@ -207,6 +207,13 @@ export const ui = {
 	heatmap: {
 		title: "年代別出現頻度",
 		noData: "データがありません",
+		dbUnavailable: "ヒートマップデータベースが利用できません。",
+		generating: (populated: number, total: number, percent: number) =>
+			`データを生成中 — ${populated} / ${total} 年完了（${percent}%）`,
+		generatingDescription:
+			"国立国会図書館APIへの負荷を抑えるため、年ごとに順次取得しています。初回のみ時間がかかりますが、一度生成されたデータは保存され、次回以降は即座に表示されます。",
+		generatingHint:
+			"このページは自動的に更新されます。しばらくお待ちください。",
 	},
 	bookCarousel: {
 		title: "関連書籍",

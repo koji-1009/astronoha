@@ -55,10 +55,10 @@ test.describe("Speech detail page (/word/[keyword]/[speechId])", () => {
 		expect(href).toContain("ndl.go.jp");
 	});
 
-	test("shows attribution", async ({ page }) => {
+	test("shows attribution in site footer", async ({ page }) => {
 		await page.goto(`/word/憲法/${speechId}`);
 
-		const footer = page.locator(".page-footer");
+		const footer = page.locator("footer.site-footer");
 		await expect(footer).toBeVisible();
 
 		const text = await footer.textContent();

@@ -28,21 +28,21 @@ test.describe("Search results page (/word/[keyword])", () => {
 		await expect(firstCard.locator(".speech-speaker")).toBeVisible();
 	});
 
-	test("shows attribution footer", async ({ page }) => {
+	test("shows attribution in site footer", async ({ page }) => {
 		await page.goto("/word/憲法");
 
-		const attribution = page.locator(".results-footer");
-		await expect(attribution).toBeVisible();
+		const footer = page.locator("footer.site-footer");
+		await expect(footer).toBeVisible();
 
-		const text = await attribution.textContent();
+		const text = await footer.textContent();
 		expect(text).toContain("国立国会図書館");
 	});
 
-	test("heatmap section renders", async ({ page }) => {
+	test("heatmap link renders", async ({ page }) => {
 		await page.goto("/word/憲法");
 
-		const heatmap = page.locator(".heatmap-section");
-		await expect(heatmap).toBeVisible();
+		const heatmapLink = page.locator(".heatmap-link");
+		await expect(heatmapLink).toBeVisible();
 	});
 
 	test("speech card links to detail page", async ({ page }) => {

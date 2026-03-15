@@ -56,7 +56,14 @@ export async function fetchSpeeches(
 		);
 	}
 
-	const data: unknown = await response.json();
+	let data: unknown;
+	try {
+		data = await response.json();
+	} catch {
+		throw new Error(
+			`${apiName} returned invalid JSON (expected JSON response, got non-JSON content)`,
+		);
+	}
 	return SpeechResponseSchema.parse(data);
 }
 
@@ -80,6 +87,13 @@ export async function fetchSpeechById(
 		);
 	}
 
-	const data: unknown = await response.json();
+	let data: unknown;
+	try {
+		data = await response.json();
+	} catch {
+		throw new Error(
+			`${apiName} returned invalid JSON (expected JSON response, got non-JSON content)`,
+		);
+	}
 	return SpeechResponseSchema.parse(data);
 }

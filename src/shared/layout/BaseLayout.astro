@@ -36,8 +36,8 @@ if (canonicalUrl.searchParams.get("page") === "1") {
 		<link rel="canonical" href={canonicalUrl.href}>
 		<ClientRouter />
 		<script is:inline>
-		(function () {
-			var m = localStorage.getItem("astronoha_colorMode");
+		(() => {
+			const m = localStorage.getItem("astronoha_colorMode");
 			if (m === "light" || m === "dark") {
 				document.documentElement.setAttribute("data-color-mode", m);
 			}

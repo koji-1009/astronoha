@@ -25,6 +25,18 @@ vi.mock("../../../../src/features/search/data/ndl-search", () => ({
 	searchBooks: vi.fn(),
 }));
 
+vi.mock("../../../../src/i18n/ui", () => ({
+	ui: {
+		error: {
+			kokkaiSearchFailed: (detail: string) =>
+				`国会会議録の検索に失敗しました: ${detail}`,
+			teikokuSearchFailed: (detail: string) =>
+				`帝国議会会議録の検索に失敗しました: ${detail}`,
+			unknownDetail: "不明なエラー",
+		},
+	},
+}));
+
 // Import mocked modules so we can control their return values
 import { searchSpeeches as mockKokkaiSearch } from "../../../../src/features/search/data/kokkai";
 import { searchBooks as mockSearchBooks } from "../../../../src/features/search/data/ndl-search";
@@ -143,6 +155,7 @@ describe("searchSpeaker", () => {
 		expect(profile.speeches).toHaveLength(2);
 		expect(profile.speeches[0].speechID).toBe("kokkai-001");
 		expect(profile.speeches[1].speechID).toBe("teikoku-001");
+		expect(profile.warnings).toHaveLength(0);
 	});
 
 	it("handles case where one API returns zero results", async () => {
@@ -174,9 +187,10 @@ describe("searchSpeaker", () => {
 		expect(profile.teikokuSpeeches).toBe(0);
 		expect(profile.speeches).toHaveLength(0);
 		expect(profile.keywords).toHaveLength(0);
+		expect(profile.warnings).toHaveLength(0);
 	});
 
-	it("handles kokkai API error gracefully", async () => {
+	it("handles kokkai API error with warning", async () => {
 		kokkaiSearch.mockRejectedValueOnce(
 			new Error(
 				"National Diet API speech request failed: 500 Internal Server Error",
@@ -193,9 +207,11 @@ describe("searchSpeaker", () => {
 		expect(profile.kokkaiSpeeches).toBe(0);
 		expect(profile.teikokuSpeeches).toBe(1);
 		expect(profile.speeches).toHaveLength(1);
+		expect(profile.warnings).toHaveLength(1);
+		expect(profile.warnings[0]).toContain("国会会議録の検索に失敗しました");
 	});
 
-	it("handles teikoku API error gracefully", async () => {
+	it("handles teikoku API error with warning", async () => {
 		const kokkaiRecord = makeSpeechRecord({
 			speechID: "kokkai-001",
 			speech: "国会の発言。",
@@ -212,9 +228,11 @@ describe("searchSpeaker", () => {
 		expect(profile.kokkaiSpeeches).toBe(1);
 		expect(profile.teikokuSpeeches).toBe(0);
 		expect(profile.speeches).toHaveLength(1);
+		expect(profile.warnings).toHaveLength(1);
+		expect(profile.warnings[0]).toContain("帝国議会会議録の検索に失敗しました");
 	});
 
-	it("handles both APIs failing gracefully", async () => {
+	it("handles both APIs failing with two warnings", async () => {
 		kokkaiSearch.mockRejectedValueOnce(new Error("Network error"));
 		teikokuSearch.mockRejectedValueOnce(new Error("Network error"));
 
@@ -224,6 +242,7 @@ describe("searchSpeaker", () => {
 		expect(profile.kokkaiSpeeches).toBe(0);
 		expect(profile.teikokuSpeeches).toBe(0);
 		expect(profile.speeches).toHaveLength(0);
+		expect(profile.warnings).toHaveLength(2);
 	});
 
 	it("generates keywords from aggregated speeches", async () => {

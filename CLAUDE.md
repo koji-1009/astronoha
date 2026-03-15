@@ -12,7 +12,7 @@ None. Follow all CRZ principles.
 
 ### CRZ Application Notes
 
-* **No authentication.** The "When authentication is required" section of CRZ Security Boundary does not apply. Middleware only reads user preferences from cookies.
+* **No authentication.** The "When authentication is required" section of CRZ Security Boundary does not apply. Middleware only applies Cloudflare env bindings and sets CDN cache headers.
 * **Chrome built-in AI.** Per CRZ Component Decisions, the Prompt API is implemented as a Stateful Island (Layer 4) since it requires local state for session management. If this island crashes, core functionality (search, browse, share) remains 100% operational on Layers 1-2.
 
 ## Tech Stack
@@ -54,13 +54,13 @@ Follows CRZ `features/` pattern.
 
 ```
 src/
-├── actions/              # Astro Actions (settings persistence)
 ├── features/
 │   ├── search/           # Cross-era keyword search
 │   │   ├── data/         # NDL API clients (server-only)
 │   │   │   ├── ndl-fetch.ts    # Shared fetch: API response cache, rate limit, retry
 │   │   │   ├── speech-api.ts   # Shared speech search logic (used by kokkai/teikoku)
 │   │   │   ├── api-config.ts   # API URL configuration
+│   │   │   ├── heatmap.ts      # Year-by-year speech counts (D1)
 │   │   │   ├── kokkai.ts
 │   │   │   ├── teikoku.ts
 │   │   │   ├── ndl-search.ts
@@ -72,11 +72,8 @@ src/
 │   ├── speaker/          # Speaker profile
 │   │   ├── data/         # Aggregation & keyword extraction (server-only)
 │   │   └── components/
-│   ├── timeline/         # Parliamentary speech × publications timeline
-│   │   ├── data/         # Publication year query + date merge logic (server-only)
-│   │   └── components/
-│   └── settings/         # User preferences
-│       ├── data/         # Cookie encode/decode
+│   └── timeline/         # Parliamentary speech × publications timeline
+│       ├── data/         # Publication year query + date merge logic (server-only)
 │       └── components/
 ├── shared/
 │   ├── layout/           # Layouts
@@ -104,7 +101,7 @@ src/
     └── global.css
 ```
 
-`features/*/data/` is called only from frontmatter and Action handlers, per CRZ. Never import from islands.
+`features/*/data/` is called only from frontmatter, per CRZ. Never import from islands.
 
 ### Cross-Feature Data Sharing
 
@@ -142,7 +139,7 @@ In addition to CRZ Test Strategy, apply these astronoha-specific rules:
   * Store real NDL API responses as fixtures in `tests/fixtures/`.
   * speaker feature: test aggregation logic that calls search data clients. Keyword extraction accuracy.
   * timeline feature: publication year query construction, date merge logic between parliamentary API responses and NDL Search responses.
-* Settings cookie encode/decode roundtrip tests.
+* heatmap feature: D1 database queries, batch generation, year range calculations, API routing.
 * Test file names: `*.test.ts`. Do not use `*.spec.ts`.
 * E2E tests: Playwright (`e2e/`). Mock API server (`e2e/mock-api-server.mjs`) provides fixture responses. Never hit real NDL APIs.
 
@@ -157,16 +154,14 @@ tests/
 │   │       ├── teikoku.test.ts
 │   │       ├── ndl-search.test.ts
 │   │       ├── ndl-thumbnail.test.ts
-│   │       └── schemas.test.ts
+│   │       ├── schemas.test.ts
+│   │       └── heatmap.test.ts
 │   ├── speaker/
 │   │   └── data/
 │   │       └── speaker.test.ts
-│   ├── timeline/
-│   │   └── data/
-│   │       └── timeline.test.ts
-│   └── settings/
+│   └── timeline/
 │       └── data/
-│           └── settings.test.ts
+│           └── timeline.test.ts
 └── shared/
 ```
 
@@ -177,7 +172,7 @@ tests/
 * CSS custom property naming follows `--md-sys-*` (system tokens) and `--md-ref-*` (reference tokens).
 * Font: `system-ui` stack. No web fonts.
 * Spacing: 4px grid (`--md-sys-spacing-*`). No magic pixel values.
-* Dark mode: switch via `prefers-color-scheme: dark`. User's `colorMode` cookie takes precedence.
+* Dark mode: switch via `prefers-color-scheme: dark`. User's `colorMode` localStorage preference takes precedence.
 * For design judgment, reference the frontend-design skill's thinking process (Purpose → Tone → Differentiation), but MD3 tokens are the overriding constraint.
 * Tone: editorial / magazine. Honor the weight of parliamentary records while making search and discovery enjoyable.
 * Accessibility: skip-to-content link, `<label>` on all form inputs (visually hidden where appropriate), `prefers-reduced-motion` support, `@media print` styles.
@@ -187,7 +182,7 @@ tests/
 
 * All NDL API calls go through `ndl-fetch.ts`, which provides:
   * **API response cache**: Cloudflare Cache API (per-PoP), 12-hour TTL. Caches upstream API responses, not rendered pages.
-  * **Rate limit**: 3-second minimum between requests (per-isolate). Sequential execution, not `Promise.all`.
+  * **Rate limit**: 1-second minimum between requests per host (per-isolate). Sequential execution, not `Promise.all`.
   * **Retry**: 1 retry with 2-second backoff on network/timeout failures.
   * **Timeout**: 10-second `AbortSignal.timeout` on all fetch calls.
 * Be mindful of Workers free tier (10ms CPU time per request).
@@ -196,12 +191,12 @@ tests/
 
 ## Settings Management
 
-Follows CRZ State Placement and Security Boundary. HttpOnly cookies only.
+Settings are client-only (localStorage). No server interaction needed.
 
-* Read: Middleware reads cookie → passes to SSR via `Astro.locals`.
-* Write: React Island → Astro Action (POST, `accept: "json"`) → Set-Cookie. This is CRZ Mutation Pattern Layer 3. `accept: "json"` because the island shows a live preview before the user commits.
-* Values: `autoSummary` (boolean), `colorMode` ("system" | "light" | "dark").
-* `searchTarget` is not a setting — it is URL-driven via `?target=kokkai|teikoku|both` query parameter (default: "both").
+* **colorMode** ("system" | "light" | "dark"): stored in `localStorage["astronoha_colorMode"]`. Applied via inline `<script>` before first paint to avoid FOUC. Settings page binds `change` events to update localStorage and `data-color-mode` attribute.
+* **autoSummary** (boolean): stored in `localStorage["astronoha_autoSummary"]`. Controls Chrome AI panel visibility.
+* **searchTarget**: not a setting — URL-driven via `?target=kokkai|teikoku|both` query parameter (default: "both").
+* All pages render identical HTML regardless of user preferences, enabling CDN caching (`s-maxage=3600`).
 
 ## Chrome Built-in AI
 

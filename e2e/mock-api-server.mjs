@@ -42,8 +42,17 @@ const server = createServer((req, res) => {
 		return;
 	}
 
+	// Error simulation: keyword "__error__" triggers 500 on speech APIs
+	const anyParam = url.searchParams.get("any");
+	const isErrorKeyword = anyParam === "__error__";
+
 	// Kokkai speech API
 	if (path === "/kokkai/speech") {
+		if (isErrorKeyword) {
+			res.writeHead(500, { "Content-Type": "text/plain" });
+			res.end("Internal Server Error (mock)");
+			return;
+		}
 		res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
 		res.end(kokkaiSpeech);
 		return;
@@ -51,6 +60,11 @@ const server = createServer((req, res) => {
 
 	// Teikoku speech API
 	if (path === "/teikoku/speech") {
+		if (isErrorKeyword) {
+			res.writeHead(500, { "Content-Type": "text/plain" });
+			res.end("Internal Server Error (mock)");
+			return;
+		}
 		res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
 		res.end(teikokuSpeech);
 		return;
@@ -58,6 +72,11 @@ const server = createServer((req, res) => {
 
 	// NDL OpenSearch API
 	if (path === "/ndl/opensearch") {
+		if (isErrorKeyword) {
+			res.writeHead(503, { "Content-Type": "text/plain" });
+			res.end("Service Unavailable (mock)");
+			return;
+		}
 		res.writeHead(200, { "Content-Type": "application/xml; charset=utf-8" });
 		res.end(openSearchXml);
 		return;

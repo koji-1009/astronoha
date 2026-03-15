@@ -6,9 +6,20 @@
  * Past years are immutable (parliamentary records don't change).
  */
 
+import { z } from "astro/zod";
 import { ndlFetch } from "./ndl-fetch";
 import { SpeechResponseSchema } from "./schemas";
 import { buildSpeechParams } from "./speech-api";
+
+const HeatmapRowSchema = z.object({
+	year: z.number(),
+	count: z.number(),
+});
+
+const ExistingPairSchema = z.object({
+	target: z.string(),
+	year: z.number(),
+});
 
 const KOKKAI_START_YEAR = 1947;
 const TEIKOKU_START_YEAR = 1890;
@@ -101,9 +112,15 @@ export async function getHeatmapData(
 			 GROUP BY year ORDER BY year`,
 		)
 		.bind(keyword, ...targets)
-		.all<{ year: number; count: number }>();
+		.all();
 
-	const entries = result.results;
+	const entries: HeatmapEntry[] = [];
+	for (const row of result.results) {
+		const parsed = HeatmapRowSchema.safeParse(row);
+		if (parsed.success) {
+			entries.push(parsed.data);
+		}
+	}
 	const populatedYears = new Set(entries.map((e) => e.year));
 
 	return {
@@ -135,11 +152,15 @@ export async function generateHeatmapBatch(
 			 WHERE keyword = ? AND target IN (${targets.map(() => "?").join(", ")})`,
 		)
 		.bind(keyword, ...targets)
-		.all<{ target: string; year: number }>();
+		.all();
 
-	const existingSet = new Set(
-		existing.results.map((r) => `${r.target}:${r.year}`),
-	);
+	const existingSet = new Set<string>();
+	for (const row of existing.results) {
+		const parsed = ExistingPairSchema.safeParse(row);
+		if (parsed.success) {
+			existingSet.add(`${parsed.data.target}:${parsed.data.year}`);
+		}
+	}
 
 	const missing: Array<{ target: "kokkai" | "teikoku"; year: number }> = [];
 	for (const year of expectedYears) {
@@ -178,7 +199,13 @@ export async function generateHeatmapBatch(
 	}
 
 	if (statements.length > 0) {
-		await db.batch(statements);
+		try {
+			await db.batch(statements);
+		} catch (error) {
+			throw new Error(
+				`Heatmap D1 batch insert failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
 	}
 
 	return batch.length;

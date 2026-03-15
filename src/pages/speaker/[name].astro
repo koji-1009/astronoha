@@ -62,6 +62,14 @@ if (profile && !errorMessage) {
 			</div>
 		)}
 
+		{profile && profile.warnings.length > 0 && (
+			<div class="warning-container card">
+				{profile.warnings.map((w) => (
+					<p class="warning-message">{w}</p>
+				))}
+			</div>
+		)}
+
 		{profile && (
 			<>
 				<header class="profile-header">

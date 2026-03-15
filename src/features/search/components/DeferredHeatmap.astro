@@ -27,7 +27,7 @@ try {
 	const db = env.HEATMAP_DB;
 
 	if (!db) {
-		errorMessage = "ヒートマップデータベースが利用できません。";
+		errorMessage = ui.heatmap.dbUnavailable;
 	} else {
 		const { getHeatmapData, generateHeatmapBatch } = await import(
 			"@/features/search/data/heatmap"
@@ -65,16 +65,16 @@ const progressPercent = heatmapData
 		<meta http-equiv="refresh" content="5" />
 		<div class="progress-container card">
 			<p class="progress-label">
-				データを生成中 — {heatmapData.populatedYears} / {heatmapData.totalYears} 年完了（{progressPercent}%）
+				{ui.heatmap.generating(heatmapData.populatedYears, heatmapData.totalYears, progressPercent)}
 			</p>
 			<div class="progress-bar">
 				<div class="progress-fill" style={`width: ${progressPercent}%`} />
 			</div>
 			<p class="progress-description">
-				国立国会図書館APIへの負荷を抑えるため、年ごとに順次取得しています。初回のみ時間がかかりますが、一度生成されたデータは保存され、次回以降は即座に表示されます。
+				{ui.heatmap.generatingDescription}
 			</p>
 			<p class="progress-hint">
-				このページは自動的に更新されます。しばらくお待ちください。
+				{ui.heatmap.generatingHint}
 			</p>
 		</div>
 	</>

@@ -1,3 +1,4 @@
+import { ui } from "../../../i18n/ui";
 import { searchSpeeches as searchKokkaiSpeeches } from "../../search/data/kokkai";
 import { searchBooks } from "../../search/data/ndl-search";
 import type {
@@ -19,6 +20,7 @@ export interface SpeakerProfile {
 	teikokuSpeeches: number;
 	speeches: SpeechRecord[];
 	keywords: KeywordEntry[];
+	warnings: string[];
 }
 
 export interface KeywordEntry {
@@ -150,6 +152,7 @@ export async function searchSpeaker(
 	options?: { maxResults?: number },
 ): Promise<SpeakerProfile> {
 	const maxResults = options?.maxResults ?? DEFAULT_MAX_RESULTS;
+	const warnings: string[] = [];
 
 	// Kokkai API first
 	let kokkaiResponse: SpeechResponse;
@@ -158,7 +161,12 @@ export async function searchSpeaker(
 			speaker: name,
 			maximumRecords: maxResults,
 		});
-	} catch {
+	} catch (error) {
+		warnings.push(
+			ui.error.kokkaiSearchFailed(
+				error instanceof Error ? error.message : ui.error.unknownDetail,
+			),
+		);
 		kokkaiResponse = {
 			numberOfRecords: 0,
 			numberOfReturn: 0,
@@ -173,7 +181,12 @@ export async function searchSpeaker(
 			speaker: name,
 			maximumRecords: maxResults,
 		});
-	} catch {
+	} catch (error) {
+		warnings.push(
+			ui.error.teikokuSearchFailed(
+				error instanceof Error ? error.message : ui.error.unknownDetail,
+			),
+		);
 		teikokuResponse = {
 			numberOfRecords: 0,
 			numberOfReturn: 0,
@@ -195,6 +208,7 @@ export async function searchSpeaker(
 		teikokuSpeeches: teikokuResponse.numberOfRecords,
 		speeches: allSpeeches,
 		keywords,
+		warnings,
 	};
 }
 

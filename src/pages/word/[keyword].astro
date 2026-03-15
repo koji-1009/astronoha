@@ -26,8 +26,12 @@ if (!keyword) {
 const decodedKeyword = decodeURIComponent(keyword);
 const pageParam = Astro.url.searchParams.get("page");
 const currentPage = pageParam ? Math.max(1, Number.parseInt(pageParam, 10)) : 1;
-const fromParam = Astro.url.searchParams.get("from") ?? undefined;
-const untilParam = Astro.url.searchParams.get("until") ?? undefined;
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const rawFrom = Astro.url.searchParams.get("from");
+const rawUntil = Astro.url.searchParams.get("until");
+const fromParam = rawFrom && DATE_PATTERN.test(rawFrom) ? rawFrom : undefined;
+const untilParam =
+	rawUntil && DATE_PATTERN.test(rawUntil) ? rawUntil : undefined;
 const pageSize = 20;
 
 const targetParam = Astro.url.searchParams.get("target");
