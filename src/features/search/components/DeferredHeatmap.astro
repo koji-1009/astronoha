@@ -1,0 +1,133 @@
+---
+/**
+ * Server Island: heatmap data with incremental D1 generation.
+ *
+ * Deferred via server:defer so the page shell returns immediately.
+ * Generates a batch of years per request; the parent page auto-refreshes
+ * via <meta http-equiv="refresh"> until generation is complete.
+ */
+
+import type { HeatmapData } from "@/features/search/data/heatmap";
+import { ui } from "@/i18n/ui";
+import Heatmap from "./Heatmap.astro";
+
+interface Props {
+	keyword: string;
+	target: "kokkai" | "teikoku" | "both";
+}
+
+const { keyword, target } = Astro.props;
+
+let heatmapData: HeatmapData | null = null;
+let errorMessage: string | null = null;
+let generated = 0;
+
+try {
+	const { env } = await import("cloudflare:workers");
+	const db = env.HEATMAP_DB;
+
+	if (!db) {
+		errorMessage = "ヒートマップデータベースが利用できません。";
+	} else {
+		const { getHeatmapData, generateHeatmapBatch } = await import(
+			"@/features/search/data/heatmap"
+		);
+		const { apiConfig } = await import("@/features/search/data/api-config");
+
+		heatmapData = await getHeatmapData(db, keyword, target);
+
+		if (!heatmapData.complete) {
+			generated = await generateHeatmapBatch(db, keyword, target, apiConfig);
+			if (generated > 0) {
+				heatmapData = await getHeatmapData(db, keyword, target);
+			}
+		}
+	}
+} catch (error) {
+	errorMessage = error instanceof Error ? error.message : ui.error.unknownError;
+}
+
+const isGenerating = heatmapData !== null && !heatmapData.complete;
+const progressPercent = heatmapData
+	? Math.round((heatmapData.populatedYears / heatmapData.totalYears) * 100)
+	: 0;
+---
+
+{errorMessage && (
+	<div class="error-container card">
+		<p class="error-title">{ui.error.label}</p>
+		<p class="error-message">{errorMessage}</p>
+	</div>
+)}
+
+{isGenerating && (
+	<>
+		<meta http-equiv="refresh" content="5" />
+		<div class="progress-container card">
+			<p class="progress-label">
+				データを生成中 — {heatmapData.populatedYears} / {heatmapData.totalYears} 年完了（{progressPercent}%）
+			</p>
+			<div class="progress-bar">
+				<div class="progress-fill" style={`width: ${progressPercent}%`} />
+			</div>
+			<p class="progress-description">
+				国立国会図書館APIへの負荷を抑えるため、年ごとに順次取得しています。初回のみ時間がかかりますが、一度生成されたデータは保存され、次回以降は即座に表示されます。
+			</p>
+			<p class="progress-hint">
+				このページは自動的に更新されます。しばらくお待ちください。
+			</p>
+		</div>
+	</>
+)}
+
+{heatmapData && heatmapData.entries.length > 0 && (
+	<section class="heatmap-section">
+		<Heatmap data={heatmapData.entries} keyword={keyword} />
+	</section>
+)}
+
+{heatmapData?.complete && heatmapData.entries.length === 0 && (
+	<div class="empty-container">
+		<p class="empty-message">
+			{ui.search.noResults(keyword)}
+		</p>
+	</div>
+)}
+
+<style>
+.progress-container {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-2);
+}
+
+.progress-label {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	color: var(--md-sys-color-on-surface);
+}
+
+.progress-bar {
+	height: 8px;
+	background: var(--md-sys-color-surface-container-high);
+	border-radius: var(--md-sys-shape-corner-full);
+	overflow: hidden;
+}
+
+.progress-fill {
+	height: 100%;
+	background: var(--md-sys-color-primary);
+	border-radius: var(--md-sys-shape-corner-full);
+	transition: width 0.3s;
+}
+
+.progress-description {
+	font-size: var(--md-sys-typescale-body-small-size);
+	line-height: var(--md-sys-typescale-body-small-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.progress-hint {
+	font-size: var(--md-sys-typescale-body-small-size);
+	color: var(--md-sys-color-primary);
+}
+</style>

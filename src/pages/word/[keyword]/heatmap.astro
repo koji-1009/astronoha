@@ -2,15 +2,14 @@
 /**
  * Heatmap page — year-by-year speech frequency visualization.
  *
- * Data is generated incrementally via D1. Each request populates
- * a batch of years. The page auto-refreshes until all years are complete.
- * Subsequent visits load instantly from D1.
+ * Page shell returns immediately. The heatmap data (D1 read + incremental
+ * generation) is deferred to a Server Island.
  *
- * CRZ Layer 1-2: server-rendered, auto-refresh via <meta http-equiv="refresh">.
+ * CRZ Layer 1-2: server-rendered shell.
+ * Server Island handles D1 interaction and auto-refresh.
  */
 
-import Heatmap from "@/features/search/components/Heatmap.astro";
-import type { HeatmapData } from "@/features/search/data/heatmap";
+import DeferredHeatmap from "@/features/search/components/DeferredHeatmap.astro";
 import { ui } from "@/i18n/ui";
 import Attribution from "@/shared/components/Attribution.astro";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
@@ -29,46 +28,6 @@ const target: "kokkai" | "teikoku" | "both" =
 		? targetParam
 		: "kokkai";
 
-let heatmapData: HeatmapData | null = null;
-let errorMessage: string | null = null;
-let generated = 0;
-
-try {
-	const { env } = await import("cloudflare:workers");
-	const db = env.HEATMAP_DB;
-
-	if (!db) {
-		errorMessage = "ヒートマップデータベースが利用できません。";
-	} else {
-		const { getHeatmapData, generateHeatmapBatch } = await import(
-			"@/features/search/data/heatmap"
-		);
-		const { apiConfig } = await import("@/features/search/data/api-config");
-
-		heatmapData = await getHeatmapData(db, decodedKeyword, target);
-
-		if (!heatmapData.complete) {
-			generated = await generateHeatmapBatch(
-				db,
-				decodedKeyword,
-				target,
-				apiConfig,
-			);
-			// Re-read after generation to include new data
-			if (generated > 0) {
-				heatmapData = await getHeatmapData(db, decodedKeyword, target);
-			}
-		}
-	}
-} catch (error) {
-	errorMessage = error instanceof Error ? error.message : ui.error.unknownError;
-}
-
-const isGenerating = heatmapData !== null && !heatmapData.complete;
-const progressPercent = heatmapData
-	? Math.round((heatmapData.populatedYears / heatmapData.totalYears) * 100)
-	: 0;
-
 const targetLabel =
 	target === "both"
 		? ui.search.targetBoth
@@ -81,10 +40,6 @@ const targetLabel =
 	title={`「${decodedKeyword}」の${ui.heatmap.title}`}
 	description={`「${decodedKeyword}」の年代別出現頻度ヒートマップ`}
 >
-	{isGenerating && (
-		<meta http-equiv="refresh" content="5" slot="head" />
-	)}
-
 	<div class="heatmap-page">
 		<nav class="breadcrumb" aria-label={ui.nav.breadcrumb}>
 			<a href="/">{ui.nav.top}</a>
@@ -111,43 +66,11 @@ const targetLabel =
 			</nav>
 		</header>
 
-		{errorMessage && (
-			<div class="error-container card">
-				<p class="error-title">{ui.error.label}</p>
-				<p class="error-message">{errorMessage}</p>
+		<DeferredHeatmap server:defer keyword={decodedKeyword} target={target}>
+			<div slot="fallback" class="progress-container card">
+				<p class="progress-label">ヒートマップデータを読み込み中…</p>
 			</div>
-		)}
-
-		{isGenerating && (
-			<div class="progress-container card">
-				<p class="progress-label">
-					データを生成中 — {heatmapData.populatedYears} / {heatmapData.totalYears} 年完了（{progressPercent}%）
-				</p>
-				<div class="progress-bar">
-					<div class="progress-fill" style={`width: ${progressPercent}%`} />
-				</div>
-				<p class="progress-description">
-					国立国会図書館APIへの負荷を抑えるため、年ごとに順次取得しています。初回のみ時間がかかりますが、一度生成されたデータは保存され、次回以降は即座に表示されます。
-				</p>
-				<p class="progress-hint">
-					このページは自動的に更新されます。しばらくお待ちください。
-				</p>
-			</div>
-		)}
-
-		{heatmapData && heatmapData.entries.length > 0 && (
-			<section class="heatmap-section">
-				<Heatmap data={heatmapData.entries} keyword={decodedKeyword} />
-			</section>
-		)}
-
-		{heatmapData?.complete && heatmapData.entries.length === 0 && (
-			<div class="empty-container">
-				<p class="empty-message">
-					{ui.search.noResults(decodedKeyword)}
-				</p>
-			</div>
-		)}
+		</DeferredHeatmap>
 
 		<footer class="page-footer"><Attribution /></footer>
 	</div>
@@ -227,21 +150,6 @@ const targetLabel =
 	border-color: transparent;
 }
 
-.error-container {
-	background: var(--md-sys-color-error-container);
-	color: var(--md-sys-color-on-error-container);
-}
-
-.error-title {
-	font-size: var(--md-sys-typescale-title-medium-size);
-	font-weight: var(--md-sys-typescale-title-medium-weight);
-	margin-bottom: var(--md-sys-spacing-2);
-}
-
-.error-message {
-	font-size: var(--md-sys-typescale-body-medium-size);
-}
-
 .progress-container {
 	display: flex;
 	flex-direction: column;
@@ -250,37 +158,7 @@ const targetLabel =
 
 .progress-label {
 	font-size: var(--md-sys-typescale-body-medium-size);
-	color: var(--md-sys-color-on-surface);
-}
-
-.progress-bar {
-	height: 8px;
-	background: var(--md-sys-color-surface-container-high);
-	border-radius: var(--md-sys-shape-corner-full);
-	overflow: hidden;
-}
-
-.progress-fill {
-	height: 100%;
-	background: var(--md-sys-color-primary);
-	border-radius: var(--md-sys-shape-corner-full);
-	transition: width 0.3s;
-}
-
-.progress-description {
-	font-size: var(--md-sys-typescale-body-small-size);
-	line-height: var(--md-sys-typescale-body-small-line-height);
 	color: var(--md-sys-color-on-surface-variant);
-}
-
-.progress-hint {
-	font-size: var(--md-sys-typescale-body-small-size);
-	color: var(--md-sys-color-primary);
-}
-
-.page-footer {
-	padding-top: var(--md-sys-spacing-6);
-	border-top: 1px solid var(--md-sys-color-outline-variant);
 }
 
 @media (max-width: 599px) {
