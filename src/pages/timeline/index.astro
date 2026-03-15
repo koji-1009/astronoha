@@ -2,12 +2,23 @@
 /**
  * Timeline index page — shows available historical periods.
  *
- * CRZ Layer 1: static HTML with period links, no JavaScript needed.
- * Users select a period, then enter a keyword on the period detail page.
+ * CRZ Layer 1: static HTML with period links + custom period form.
+ * No JavaScript needed. The custom period form submits via GET,
+ * and the server redirects to /timeline/YYYY-MM.
  */
 
 import { ui } from "@/i18n/ui";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
+
+// Handle custom period form submission (GET ?period=YYYY-MM)
+const periodParam = Astro.url.searchParams.get("period")?.trim();
+if (periodParam) {
+	return Astro.redirect(`/timeline/${periodParam}`);
+}
+
+// Current year-month for max attribute (e.g. "2026-03")
+const now = new Date();
+const maxPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
 const { getAvailablePeriods } = await import(
 	"@/features/timeline/data/timeline"
@@ -35,6 +46,28 @@ for (const period of periods) {
 			<h1 class="page-title">{ui.timeline.title}</h1>
 			<p class="page-description">{ui.timeline.description}</p>
 		</header>
+
+		<section class="custom-period-section card">
+			<h2 class="custom-period-title">{ui.timeline.customPeriod}</h2>
+			<p class="custom-period-hint">{ui.timeline.customPeriodHint}</p>
+			<form method="GET" action="/timeline" class="custom-period-form">
+				<label for="custom-period" class="visually-hidden"
+					>{ui.timeline.customPeriod}</label
+				>
+				<div class="custom-period-field">
+					<input
+						id="custom-period"
+						type="month"
+						name="period"
+						class="outlined"
+						min="1890-01"
+						max={maxPeriod}
+						required
+					>
+					<button type="submit" class="filled">{ui.timeline.go}</button>
+				</div>
+			</form>
+		</section>
 
 		<p class="form-label">{ui.timeline.selectPeriod}</p>
 
@@ -83,6 +116,39 @@ for (const period of periods) {
 	font-size: var(--md-sys-typescale-body-large-size);
 	line-height: var(--md-sys-typescale-body-large-line-height);
 	color: var(--md-sys-color-on-surface-variant);
+}
+
+.custom-period-section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-2);
+}
+
+.custom-period-title {
+	font-size: var(--md-sys-typescale-title-medium-size);
+	font-weight: var(--md-sys-typescale-title-medium-weight);
+	line-height: var(--md-sys-typescale-title-medium-line-height);
+	color: var(--md-sys-color-on-surface);
+}
+
+.custom-period-hint {
+	font-size: var(--md-sys-typescale-body-small-size);
+	line-height: var(--md-sys-typescale-body-small-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.custom-period-form {
+	margin-top: var(--md-sys-spacing-1);
+}
+
+.custom-period-field {
+	display: flex;
+	gap: var(--md-sys-spacing-2);
+	max-width: 320px;
+}
+
+.custom-period-field input {
+	flex: 1;
 }
 
 .form-label {
@@ -149,6 +215,10 @@ for (const period of periods) {
 
 	.period-grid {
 		grid-template-columns: 1fr;
+	}
+
+	.custom-period-field {
+		flex-direction: column;
 	}
 }
 </style>
