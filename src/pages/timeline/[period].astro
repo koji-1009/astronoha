@@ -12,7 +12,6 @@
 import TimelineScroll from "@/features/timeline/components/TimelineScroll.astro";
 import type { TimelineData } from "@/features/timeline/data/timeline";
 import { ui } from "@/i18n/ui";
-import Attribution from "@/shared/components/Attribution.astro";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
 
 const periodParam = Astro.params.period;
@@ -156,10 +155,6 @@ if (keyword && !errorMessage) {
 						<TimelineScroll entries={timelineData.entries} keyword={keyword ?? ""} period={periodParam} filter={filter} />
 					</section>
 				)}
-
-				<footer class="page-footer">
-					<Attribution />
-				</footer>
 			</>
 		)}
 	</div>

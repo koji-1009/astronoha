@@ -5,7 +5,6 @@
  * CRZ Layer 1: pure HTML, no JavaScript needed.
  */
 
-import Attribution from "@/shared/components/Attribution.astro";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
 ---
 
@@ -148,8 +147,6 @@ import BaseLayout from "@/shared/layout/BaseLayout.astro";
 				</a>
 			</p>
 		</section>
-
-		<footer class="page-footer"><Attribution /></footer>
 	</div>
 </BaseLayout>
 
@@ -272,11 +269,6 @@ import BaseLayout from "@/shared/layout/BaseLayout.astro";
 .terms-card {
 	display: flex;
 	flex-direction: column;
-}
-
-.page-footer {
-	padding-top: var(--md-sys-spacing-6);
-	border-top: 1px solid var(--md-sys-color-outline-variant);
 }
 
 @media (max-width: 599px) {

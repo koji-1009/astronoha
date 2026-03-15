@@ -8,7 +8,6 @@
 import KeywordCloud from "@/features/speaker/components/KeywordCloud.astro";
 import type { SpeakerProfile } from "@/features/speaker/data/speaker";
 import { ui } from "@/i18n/ui";
-import Attribution from "@/shared/components/Attribution.astro";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
 import { formatDate, truncateSpeech } from "@/shared/lib/format";
 
@@ -163,10 +162,6 @@ if (profile && !errorMessage) {
 						</ul>
 					</section>
 				)}
-
-				<footer class="page-footer">
-					<Attribution />
-				</footer>
 			</>
 		)}
 	</div>

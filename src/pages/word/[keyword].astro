@@ -13,7 +13,6 @@ import DeferredSpeechList from "@/features/search/components/DeferredSpeechList.
 import LlmPanel from "@/features/search/components/LlmPanel";
 import type { SpeechRecord } from "@/features/search/data/schemas";
 import { ui } from "@/i18n/ui";
-import Attribution from "@/shared/components/Attribution.astro";
 import Pagination from "@/shared/components/Pagination.astro";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
 import { formatDate, truncateSpeech } from "@/shared/lib/format";
@@ -261,8 +260,6 @@ if (searchTarget !== "both") {
 		<section class="llm-section">
 			<LlmPanel client:idle keyword={decodedKeyword} />
 		</section>
-
-		<footer class="results-footer"><Attribution /></footer>
 	</div>
 </BaseLayout>
 
@@ -476,11 +473,6 @@ if (searchTarget !== "both") {
 .loading-text {
 	font-size: var(--md-sys-typescale-body-medium-size);
 	color: var(--md-sys-color-on-surface-variant);
-}
-
-.results-footer {
-	padding-top: var(--md-sys-spacing-6);
-	border-top: 1px solid var(--md-sys-color-outline-variant);
 }
 
 @media (max-width: 599px) {

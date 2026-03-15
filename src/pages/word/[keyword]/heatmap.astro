@@ -11,7 +11,6 @@
 
 import DeferredHeatmap from "@/features/search/components/DeferredHeatmap.astro";
 import { ui } from "@/i18n/ui";
-import Attribution from "@/shared/components/Attribution.astro";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
 
 const keywordParam = Astro.params.keyword;
@@ -71,8 +70,6 @@ const targetLabel =
 				<p class="progress-label">ヒートマップデータを読み込み中…</p>
 			</div>
 		</DeferredHeatmap>
-
-		<footer class="page-footer"><Attribution /></footer>
 	</div>
 </BaseLayout>
 

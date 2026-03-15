@@ -10,7 +10,6 @@ import DeferredBookCarousel from "@/features/search/components/DeferredBookCarou
 import LlmPanel from "@/features/search/components/LlmPanel";
 import type { SpeechRecord } from "@/features/search/data/schemas";
 import { ui } from "@/i18n/ui";
-import Attribution from "@/shared/components/Attribution.astro";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
 import { formatDate } from "@/shared/lib/format";
 
@@ -171,8 +170,6 @@ function splitParagraphs(text: string): string[] {
 				<LlmPanel client:idle speechText={speech.speech} keyword={decodedKeyword} year={speechYear} />
 			</section>
 		)}
-
-		<footer class="page-footer"><Attribution /></footer>
 	</div>
 </BaseLayout>
 
