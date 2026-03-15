@@ -10,15 +10,26 @@
 import { ui } from "@/i18n/ui";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
 
-// Handle custom period form submission (GET ?period=YYYY-MM)
-const periodParam = Astro.url.searchParams.get("period")?.trim();
-if (periodParam) {
-	return Astro.redirect(`/timeline/${periodParam}`);
-}
-
-// Current year-month for max attribute (e.g. "2026-03")
+// Current year-month for max attribute and validation (e.g. "2026-03")
 const now = new Date();
 const maxPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+// Handle custom period form submission (GET ?period=YYYY-MM)
+const periodParam = Astro.url.searchParams.get("period")?.trim();
+let periodError: string | null = null;
+if (periodParam) {
+	const isValidFormat = /^\d{4}-\d{2}$/.test(periodParam);
+	const month = isValidFormat
+		? Number.parseInt(periodParam.split("-")[1], 10)
+		: 0;
+	const isValidMonth = month >= 1 && month <= 12;
+	const isInRange = periodParam >= "1890-01" && periodParam <= maxPeriod;
+
+	if (isValidFormat && isValidMonth && isInRange) {
+		return Astro.redirect(`/timeline/${periodParam}`);
+	}
+	periodError = ui.timeline.customPeriodInvalid(periodParam);
+}
 
 const { getAvailablePeriods } = await import(
 	"@/features/timeline/data/timeline"
@@ -50,6 +61,11 @@ for (const period of periods) {
 		<section class="custom-period-section card">
 			<h2 class="custom-period-title">{ui.timeline.customPeriod}</h2>
 			<p class="custom-period-hint">{ui.timeline.customPeriodHint}</p>
+			{periodError && (
+				<div class="warning-container">
+					<p class="warning-message">{periodError}</p>
+				</div>
+			)}
 			<form method="GET" action="/timeline" class="custom-period-form">
 				<label for="custom-period" class="visually-hidden"
 					>{ui.timeline.customPeriod}</label
@@ -62,6 +78,9 @@ for (const period of periods) {
 						class="outlined"
 						min="1890-01"
 						max={maxPeriod}
+						placeholder="1947-05"
+						pattern="\d{4}-\d{2}"
+						value={periodError ? periodParam : ""}
 						required
 					>
 					<button type="submit" class="filled">{ui.timeline.go}</button>

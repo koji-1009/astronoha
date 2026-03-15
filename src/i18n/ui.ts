@@ -89,7 +89,10 @@ export const ui = {
 			"議会の議事録とNDLサーチの出版物を日付軸で重ね合わせ、ある言葉が議会で議論された時期にどんな書籍が出版されたかを閲覧できます。",
 		selectPeriod: "期間を選ぶか、年月を直接指定してください。",
 		customPeriod: "年月を指定",
-		customPeriodHint: "1890年〜現在の年月を入力できます",
+		customPeriodHint:
+			"1890-01〜現在の年月をYYYY-MM形式で入力してください（例: 1947-05）",
+		customPeriodInvalid: (value: string) =>
+			`「${value}」は有効な年月ではありません。YYYY-MM形式（例: 1947-05）で、1890-01以降の年月を入力してください。`,
 		go: "表示",
 	},
 
