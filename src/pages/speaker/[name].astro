@@ -8,8 +8,9 @@
 import KeywordCloud from "@/features/speaker/components/KeywordCloud.astro";
 import type { SpeakerProfile } from "@/features/speaker/data/speaker";
 import { ui } from "@/i18n/ui";
+import SpeechCard from "@/shared/components/SpeechCard.astro";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
-import { formatDate, truncateSpeech } from "@/shared/lib/format";
+import { truncateSpeech } from "@/shared/lib/format";
 
 const nameParam = Astro.params.name;
 if (!nameParam) {
@@ -111,23 +112,14 @@ if (profile && !errorMessage) {
 						<ul class="speech-list">
 							{profile.speeches.map((speech) => (
 								<li>
-									<a
+									<SpeechCard
 										href={`/word/${encodeURIComponent(decodedName)}/${encodeURIComponent(speech.speechID)}`}
-										class="card speech-card"
-									>
-										<div class="speech-meta">
-											<span class="speech-house">{speech.nameOfHouse}</span>
-											<span class="speech-meeting">
-												{speech.nameOfMeeting} {speech.issue}
-											</span>
-											<time class="speech-date" datetime={speech.date ?? ""}>
-												{formatDate(speech.date)}
-											</time>
-										</div>
-										<p class="speech-excerpt">
-											{truncateSpeech(speech.speech)}
-										</p>
-									</a>
+										nameOfHouse={speech.nameOfHouse}
+										nameOfMeeting={speech.nameOfMeeting}
+										issue={speech.issue}
+										date={speech.date}
+										excerpt={truncateSpeech(speech.speech, 150)}
+									/>
 								</li>
 							))}
 						</ul>
@@ -239,55 +231,6 @@ if (profile && !errorMessage) {
 	padding: 0;
 }
 
-.speech-card {
-	display: block;
-	text-decoration: none;
-	color: inherit;
-	transition:
-		box-shadow 0.2s,
-		background-color 0.2s;
-}
-
-.speech-card:hover {
-	box-shadow: var(--md-sys-elevation-2);
-	background: var(--md-sys-color-surface-container);
-}
-
-.speech-meta {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--md-sys-spacing-2);
-	align-items: center;
-	margin-bottom: var(--md-sys-spacing-2);
-}
-
-.speech-house {
-	display: inline-block;
-	padding: var(--md-sys-spacing-0) var(--md-sys-spacing-2);
-	background: var(--md-sys-color-tertiary-container);
-	color: var(--md-sys-color-on-tertiary-container);
-	border-radius: var(--md-sys-shape-corner-extra-small);
-	font-size: var(--md-sys-typescale-label-small-size);
-	font-weight: var(--md-sys-typescale-label-small-weight);
-}
-
-.speech-meeting {
-	font-size: var(--md-sys-typescale-label-medium-size);
-	color: var(--md-sys-color-on-surface-variant);
-}
-
-.speech-date {
-	font-size: var(--md-sys-typescale-label-medium-size);
-	color: var(--md-sys-color-on-surface-variant);
-	margin-left: auto;
-}
-
-.speech-excerpt {
-	font-size: var(--md-sys-typescale-body-medium-size);
-	line-height: var(--md-sys-typescale-body-medium-line-height);
-	color: var(--md-sys-color-on-surface-variant);
-}
-
 .books-section {
 	margin-top: var(--md-sys-spacing-4);
 }
@@ -338,15 +281,6 @@ if (profile && !errorMessage) {
 
 	.profile-stats {
 		gap: var(--md-sys-spacing-4);
-	}
-
-	.speech-meta {
-		flex-direction: column;
-		align-items: flex-start;
-	}
-
-	.speech-date {
-		margin-left: 0;
 	}
 }
 </style>

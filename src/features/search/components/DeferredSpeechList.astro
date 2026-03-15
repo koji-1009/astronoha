@@ -8,7 +8,8 @@
 
 import { ui } from "@/i18n/ui";
 import Pagination from "@/shared/components/Pagination.astro";
-import { formatDate, truncateSpeech } from "@/shared/lib/format";
+import SpeechCard from "@/shared/components/SpeechCard.astro";
+import { truncateSpeech } from "@/shared/lib/format";
 
 interface Props {
 	keyword: string;
@@ -83,24 +84,15 @@ const totalPages = Math.ceil(totalRecords / pageSize);
 		<ol class="speech-list">
 			{speeches.map((speech) => (
 				<li>
-					<a
+					<SpeechCard
 						href={`/word/${encodeURIComponent(keyword)}/${encodeURIComponent(speech.speechID)}`}
-						class="card speech-card"
-					>
-						<div class="speech-meta">
-							<span class="speech-house">{speech.nameOfHouse}</span>
-							<span class="speech-meeting">
-								{speech.nameOfMeeting} {speech.issue}
-							</span>
-							<time class="speech-date" datetime={speech.date ?? ""}>
-								{formatDate(speech.date)}
-							</time>
-						</div>
-						<p class="speech-speaker">{speech.speaker}</p>
-						<p class="speech-excerpt">
-							{truncateSpeech(speech.speech)}
-						</p>
-					</a>
+						nameOfHouse={speech.nameOfHouse}
+						nameOfMeeting={speech.nameOfMeeting}
+						issue={speech.issue}
+						date={speech.date}
+						speaker={speech.speaker}
+						excerpt={truncateSpeech(speech.speech)}
+					/>
 				</li>
 			))}
 		</ol>
@@ -132,75 +124,8 @@ const totalPages = Math.ceil(totalRecords / pageSize);
 	padding: 0;
 }
 
-.speech-card {
-	display: block;
-	text-decoration: none;
-	color: inherit;
-	transition:
-		box-shadow 0.2s,
-		background-color 0.2s;
-}
-
-.speech-card:hover {
-	box-shadow: var(--md-sys-elevation-2);
-	background: var(--md-sys-color-surface-container);
-}
-
-.speech-meta {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--md-sys-spacing-2);
-	align-items: center;
-	margin-bottom: var(--md-sys-spacing-2);
-}
-
-.speech-house {
-	display: inline-block;
-	padding: var(--md-sys-spacing-0) var(--md-sys-spacing-2);
-	background: var(--md-sys-color-tertiary-container);
-	color: var(--md-sys-color-on-tertiary-container);
-	border-radius: var(--md-sys-shape-corner-extra-small);
-	font-size: var(--md-sys-typescale-label-small-size);
-	font-weight: var(--md-sys-typescale-label-small-weight);
-}
-
-.speech-meeting {
-	font-size: var(--md-sys-typescale-label-medium-size);
-	color: var(--md-sys-color-on-surface-variant);
-}
-
-.speech-date {
-	font-size: var(--md-sys-typescale-label-medium-size);
-	color: var(--md-sys-color-on-surface-variant);
-	margin-left: auto;
-}
-
-.speech-speaker {
-	font-size: var(--md-sys-typescale-title-small-size);
-	font-weight: var(--md-sys-typescale-title-small-weight);
-	color: var(--md-sys-color-primary);
-	margin-bottom: var(--md-sys-spacing-1);
-}
-
-.speech-excerpt {
-	font-size: var(--md-sys-typescale-body-medium-size);
-	line-height: var(--md-sys-typescale-body-medium-line-height);
-	color: var(--md-sys-color-on-surface-variant);
-}
-
 .no-results {
 	font-size: var(--md-sys-typescale-body-medium-size);
 	color: var(--md-sys-color-on-surface-variant);
-}
-
-@media (max-width: 599px) {
-	.speech-meta {
-		flex-direction: column;
-		align-items: flex-start;
-	}
-
-	.speech-date {
-		margin-left: 0;
-	}
 }
 </style>

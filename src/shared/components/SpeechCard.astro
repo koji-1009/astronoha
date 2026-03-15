@@ -1,0 +1,102 @@
+---
+/**
+ * Shared speech card component used in search results and speaker pages.
+ *
+ * Renders a linked card with house badge, meeting info, date, optional speaker
+ * name, and excerpt. Scoped styles follow MD3 tokens.
+ */
+
+import { formatDate } from "@/shared/lib/format";
+
+interface Props {
+	href: string;
+	nameOfHouse: string;
+	nameOfMeeting: string;
+	issue: string;
+	date: string | null;
+	speaker?: string | null;
+	excerpt: string;
+}
+
+const { href, nameOfHouse, nameOfMeeting, issue, date, speaker, excerpt } =
+	Astro.props;
+---
+
+<a href={href} class="card speech-card">
+	<div class="speech-meta">
+		<span class="speech-house">{nameOfHouse}</span>
+		<span class="speech-meeting"> {nameOfMeeting} {issue} </span>
+		<time class="speech-date" datetime={date ?? ""}> {formatDate(date)} </time>
+	</div>
+	{speaker && <p class="speech-speaker">{speaker}</p>}
+	<p class="speech-excerpt">{excerpt}</p>
+</a>
+
+<style>
+.speech-card {
+	display: block;
+	text-decoration: none;
+	color: inherit;
+	transition:
+		box-shadow 0.2s,
+		background-color 0.2s;
+}
+
+.speech-card:hover {
+	box-shadow: var(--md-sys-elevation-2);
+	background: var(--md-sys-color-surface-container);
+}
+
+.speech-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--md-sys-spacing-2);
+	align-items: center;
+	margin-bottom: var(--md-sys-spacing-2);
+}
+
+.speech-house {
+	display: inline-block;
+	padding: var(--md-sys-spacing-0) var(--md-sys-spacing-2);
+	background: var(--md-sys-color-tertiary-container);
+	color: var(--md-sys-color-on-tertiary-container);
+	border-radius: var(--md-sys-shape-corner-extra-small);
+	font-size: var(--md-sys-typescale-label-small-size);
+	font-weight: var(--md-sys-typescale-label-small-weight);
+}
+
+.speech-meeting {
+	font-size: var(--md-sys-typescale-label-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.speech-date {
+	font-size: var(--md-sys-typescale-label-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+	margin-left: auto;
+}
+
+.speech-speaker {
+	font-size: var(--md-sys-typescale-title-small-size);
+	font-weight: var(--md-sys-typescale-title-small-weight);
+	color: var(--md-sys-color-primary);
+	margin-bottom: var(--md-sys-spacing-1);
+}
+
+.speech-excerpt {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	line-height: var(--md-sys-typescale-body-medium-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+@media (max-width: 599px) {
+	.speech-meta {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.speech-date {
+		margin-left: 0;
+	}
+}
+</style>
