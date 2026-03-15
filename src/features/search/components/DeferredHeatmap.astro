@@ -3,8 +3,8 @@
  * Server Island: heatmap data with incremental D1 generation.
  *
  * Deferred via server:defer so the page shell returns immediately.
- * Generates a batch of years per request; the parent page auto-refreshes
- * via <meta http-equiv="refresh"> until generation is complete.
+ * Generates a batch of years per request; auto-refreshes via
+ * Astro view transitions (navigate) until generation is complete.
  */
 
 import type { HeatmapData } from "@/features/search/data/heatmap";
@@ -61,23 +61,20 @@ const progressPercent = heatmapData
 )}
 
 {isGenerating && (
-	<>
-		<meta http-equiv="refresh" content="5" />
-		<div class="progress-container card">
-			<p class="progress-label">
-				{ui.heatmap.generating(heatmapData.populatedYears, heatmapData.totalYears, progressPercent)}
-			</p>
-			<div class="progress-bar">
-				<div class="progress-fill" style={`width: ${progressPercent}%`} />
-			</div>
-			<p class="progress-description">
-				{ui.heatmap.generatingDescription}
-			</p>
-			<p class="progress-hint">
-				{ui.heatmap.generatingHint}
-			</p>
+	<div class="progress-container card" data-heatmap-generating>
+		<p class="progress-label">
+			{ui.heatmap.generating(heatmapData.populatedYears, heatmapData.totalYears, progressPercent)}
+		</p>
+		<div class="progress-bar">
+			<div class="progress-fill" style={`width: ${progressPercent}%`} />
 		</div>
-	</>
+		<p class="progress-description">
+			{ui.heatmap.generatingDescription}
+		</p>
+		<p class="progress-hint">
+			{ui.heatmap.generatingHint}
+		</p>
+	</div>
 )}
 
 {heatmapData && heatmapData.entries.length > 0 && (
@@ -93,6 +90,20 @@ const progressPercent = heatmapData
 		</p>
 	</div>
 )}
+
+<script is:inline>
+if (document.querySelector("[data-heatmap-generating]")) {
+	setTimeout(() => {
+		import("astro:transitions/client")
+			.then((mod) => {
+				mod.navigate(window.location.href);
+			})
+			.catch(() => {
+				window.location.reload();
+			});
+	}, 5000);
+}
+</script>
 
 <style>
 .progress-container {
