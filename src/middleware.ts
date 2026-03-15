@@ -1,7 +1,5 @@
 import { defineMiddleware } from "astro:middleware";
 import { apiConfig } from "./features/search/data/api-config";
-import { decodeSettings } from "./features/settings/data/cookie";
-import { DEFAULT_SETTINGS } from "./shared/types/settings";
 
 // Apply Cloudflare env bindings to shared apiConfig once.
 // In workerd, process.env is per-module and not shared, but module
@@ -27,18 +25,12 @@ async function applyCloudflareEnv(): Promise<void> {
 
 export const onRequest = defineMiddleware(async (context, next) => {
 	await applyCloudflareEnv();
-	const cookie = context.cookies.get("astronoha_settings")?.value;
-	context.locals.settings = cookie ? decodeSettings(cookie) : DEFAULT_SETTINGS;
 
 	const response = await next();
 
-	// CDN page cache: most pages render identical HTML for all users
-	// (colorMode is applied client-side via localStorage, search target is URL-driven).
-	// Excluded: POST/Action responses (method check) and /settings (form shows user's current values).
-	if (
-		context.request.method === "GET" &&
-		!context.url.pathname.startsWith("/settings")
-	) {
+	// CDN page cache: all pages render identical HTML for all users.
+	// Color mode applied client-side via localStorage, search target is URL-driven.
+	if (context.request.method === "GET") {
 		response.headers.set(
 			"Cache-Control",
 			"public, s-maxage=3600, stale-while-revalidate=300",

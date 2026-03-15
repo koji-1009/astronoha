@@ -2,22 +2,12 @@
 /**
  * Settings page.
  *
- * CRZ Layer 1-2: HTML form with Astro Action.
- * No React Island needed — radio buttons and checkbox
- * don't require live preview or client-side state.
+ * Both settings (colorMode, autoSummary) control JS-only features.
+ * Saved to localStorage via inline script. No server interaction needed.
  */
 
-import { actions } from "astro:actions";
 import { ui } from "@/i18n/ui";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
-
-const settings = Astro.locals.settings;
-
-const result = Astro.getActionResult(actions.updateSettingsForm);
-if (result && !result.error) {
-	return Astro.redirect("/settings");
-}
-const formError = result?.error ? ui.settings.saveFailed : null;
 ---
 
 <BaseLayout title={ui.settings.title} description={ui.settings.description}>
@@ -26,68 +16,89 @@ const formError = result?.error ? ui.settings.saveFailed : null;
 		<p class="page-description">{ui.settings.description}</p>
 
 		<div class="settings-content">
-			{formError && (
-				<p class="form-error">{formError}</p>
-			)}
-
-			<form method="POST" action={actions.updateSettingsForm}>
-				<section class="setting-group card">
-					<h2 class="group-title">{ui.settings.colorMode}</h2>
-					<p class="group-description">{ui.settings.colorModeDescription}</p>
-					<div class="radio-group">
-						<label class="radio-label">
-							<input
-								type="radio"
-								name="colorMode"
-								value="system"
-								checked={settings.colorMode === "system"}
-							>
-							{ui.settings.colorModeSystem}
-						</label>
-						<label class="radio-label">
-							<input
-								type="radio"
-								name="colorMode"
-								value="light"
-								checked={settings.colorMode === "light"}
-							>
-							{ui.settings.colorModeLight}
-						</label>
-						<label class="radio-label">
-							<input
-								type="radio"
-								name="colorMode"
-								value="dark"
-								checked={settings.colorMode === "dark"}
-							>
-							{ui.settings.colorModeDark}
-						</label>
-					</div>
-				</section>
-
-				<section class="setting-group card">
-					<h2 class="group-title">{ui.settings.autoSummary}</h2>
-					<p class="group-description">{ui.settings.autoSummaryDescription}</p>
-					<label class="checkbox-label">
-						<input
-							type="checkbox"
-							name="autoSummary"
-							checked={settings.autoSummary}
-						>
-						{ui.settings.autoSummaryDetail}
+			<section class="setting-group card">
+				<h2 class="group-title">{ui.settings.colorMode}</h2>
+				<p class="group-description">{ui.settings.colorModeDescription}</p>
+				<div class="radio-group">
+					<label class="radio-label">
+						<input type="radio" name="colorMode" value="system">
+						{ui.settings.colorModeSystem}
 					</label>
-					<p class="setting-hint">{ui.settings.chromeAiRequired}</p>
-				</section>
+					<label class="radio-label">
+						<input type="radio" name="colorMode" value="light">
+						{ui.settings.colorModeLight}
+					</label>
+					<label class="radio-label">
+						<input type="radio" name="colorMode" value="dark">
+						{ui.settings.colorModeDark}
+					</label>
+				</div>
+			</section>
 
-				<button type="submit" class="filled submit-button">
-					{ui.settings.saveButton}
-				</button>
-			</form>
+			<section class="setting-group card">
+				<h2 class="group-title">{ui.settings.autoSummary}</h2>
+				<p class="group-description">{ui.settings.autoSummaryDescription}</p>
+				<label class="checkbox-label">
+					<input type="checkbox" name="autoSummary">
+					{ui.settings.autoSummaryDetail}
+				</label>
+				<p class="setting-hint">{ui.settings.chromeAiRequired}</p>
+			</section>
 		</div>
 	</div>
-	<!-- Sync server-side colorMode to localStorage for client-side application -->
-	<script is:inline define:vars={{ colorMode: settings.colorMode }}>
-	localStorage.setItem("astronoha_colorMode", colorMode);
+
+	<script>
+	function loadSettings() {
+		const colorMode = localStorage.getItem("astronoha_colorMode") ?? "system";
+		const autoSummary =
+			localStorage.getItem("astronoha_autoSummary") === "true";
+
+		const radios = document.querySelectorAll<HTMLInputElement>(
+			'input[name="colorMode"]',
+		);
+		for (const radio of radios) {
+			radio.checked = radio.value === colorMode;
+		}
+
+		const checkbox = document.querySelector<HTMLInputElement>(
+			'input[name="autoSummary"]',
+		);
+		if (checkbox) {
+			checkbox.checked = autoSummary;
+		}
+	}
+
+	function bindListeners() {
+		const radios = document.querySelectorAll<HTMLInputElement>(
+			'input[name="colorMode"]',
+		);
+		for (const radio of radios) {
+			radio.addEventListener("change", () => {
+				localStorage.setItem("astronoha_colorMode", radio.value);
+				if (radio.value === "light" || radio.value === "dark") {
+					document.documentElement.setAttribute("data-color-mode", radio.value);
+				} else {
+					document.documentElement.removeAttribute("data-color-mode");
+				}
+			});
+		}
+
+		const checkbox = document.querySelector<HTMLInputElement>(
+			'input[name="autoSummary"]',
+		);
+		if (checkbox) {
+			checkbox.addEventListener("change", () => {
+				localStorage.setItem("astronoha_autoSummary", String(checkbox.checked));
+			});
+		}
+	}
+
+	loadSettings();
+	bindListeners();
+	document.addEventListener("astro:page-load", () => {
+		loadSettings();
+		bindListeners();
+	});
 	</script>
 </BaseLayout>
 
@@ -116,20 +127,6 @@ const formError = result?.error ? ui.settings.saveFailed : null;
 	display: flex;
 	flex-direction: column;
 	gap: var(--md-sys-spacing-4);
-}
-
-.settings-content form {
-	display: flex;
-	flex-direction: column;
-	gap: var(--md-sys-spacing-4);
-}
-
-.form-error {
-	font-size: var(--md-sys-typescale-body-medium-size);
-	color: var(--md-sys-color-error);
-	padding: var(--md-sys-spacing-4);
-	background: var(--md-sys-color-error-container);
-	border-radius: var(--md-sys-shape-corner-medium);
 }
 
 .setting-group {
@@ -181,11 +178,6 @@ const formError = result?.error ? ui.settings.saveFailed : null;
 	line-height: var(--md-sys-typescale-body-small-line-height);
 	color: var(--md-sys-color-on-surface-variant);
 	padding-left: var(--md-sys-spacing-8);
-}
-
-.submit-button {
-	align-self: flex-start;
-	margin-top: var(--md-sys-spacing-2);
 }
 
 @media (max-width: 599px) {
