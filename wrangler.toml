@@ -1,6 +1,10 @@
 # Astro Cloudflare adapter auto-generates most config in dist/server/wrangler.json.
 # This file provides bindings that the adapter doesn't manage.
 
+routes = [
+	{ pattern = "astronoha.app.koji-1009.com", custom_domain = true }
+]
+
 [[d1_databases]]
 binding = "HEATMAP_DB"
 database_name = "astronoha-heatmap"
