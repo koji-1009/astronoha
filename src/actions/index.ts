@@ -11,23 +11,6 @@ const COOKIE_OPTIONS = {
 };
 
 export const server = {
-	updateSettings: defineAction({
-		accept: "json",
-		input: z.object({
-			autoSummary: z.boolean(),
-			colorMode: z.enum(["system", "light", "dark"]),
-		}),
-		handler: async (input, context) => {
-			const encoded = encodeSettings(input);
-			context.cookies.set("astronoha_settings", encoded, COOKIE_OPTIONS);
-			return { success: true };
-		},
-	}),
-
-	/**
-	 * Form-based settings update for no-JS fallback.
-	 * Accepts standard HTML form data (CRZ Layer 1-2).
-	 */
 	updateSettingsForm: defineAction({
 		accept: "form",
 		input: z.object({

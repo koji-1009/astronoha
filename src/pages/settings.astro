@@ -2,15 +2,12 @@
 /**
  * Settings page.
  *
- * CRZ Layer 1-2: HTML form works without JavaScript.
- * CRZ Layer 3: SettingsForm island handles live preview and
- * Astro Action calls to persist settings via HttpOnly cookie.
- *
- * Current settings are passed as props from Astro.locals.
+ * CRZ Layer 1-2: HTML form with Astro Action.
+ * No React Island needed — radio buttons and checkbox
+ * don't require live preview or client-side state.
  */
 
 import { actions } from "astro:actions";
-import SettingsForm from "@/features/settings/components/SettingsForm";
 import { ui } from "@/i18n/ui";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
 
@@ -29,74 +26,63 @@ const formError = result?.error ? ui.settings.saveFailed : null;
 		<p class="page-description">{ui.settings.description}</p>
 
 		<div class="settings-content">
-			<!-- Layer 3: React Island for JS-enabled experience -->
-			<SettingsForm client:idle currentSettings={settings} />
+			{formError && (
+				<p class="form-error">{formError}</p>
+			)}
 
-			<!-- Layer 1-2: HTML form (default). Hidden by inline script when JS is available. -->
-			<div class="settings-fallback" id="settings-fallback">
-				{formError && (
-					<p class="form-error">{formError}</p>
-				)}
-
-				<form method="POST" action={actions.updateSettingsForm}>
-					<section class="setting-group card">
-						<h2 class="group-title">{ui.settings.colorMode}</h2>
-						<p class="group-description">{ui.settings.colorModeDescription}</p>
-						<div class="radio-group">
-							<label class="radio-label">
-								<input
-									type="radio"
-									name="colorMode"
-									value="system"
-									checked={settings.colorMode === "system"}
-								>
-								{ui.settings.colorModeSystem}
-							</label>
-							<label class="radio-label">
-								<input
-									type="radio"
-									name="colorMode"
-									value="light"
-									checked={settings.colorMode === "light"}
-								>
-								{ui.settings.colorModeLight}
-							</label>
-							<label class="radio-label">
-								<input
-									type="radio"
-									name="colorMode"
-									value="dark"
-									checked={settings.colorMode === "dark"}
-								>
-								{ui.settings.colorModeDark}
-							</label>
-						</div>
-					</section>
-
-					<section class="setting-group card">
-						<h2 class="group-title">{ui.settings.autoSummary}</h2>
-						<p class="group-description">
-							{ui.settings.autoSummaryDescription}
-						</p>
-						<label class="checkbox-label">
+			<form method="POST" action={actions.updateSettingsForm}>
+				<section class="setting-group card">
+					<h2 class="group-title">{ui.settings.colorMode}</h2>
+					<p class="group-description">{ui.settings.colorModeDescription}</p>
+					<div class="radio-group">
+						<label class="radio-label">
 							<input
-								type="checkbox"
-								name="autoSummary"
-								checked={settings.autoSummary}
+								type="radio"
+								name="colorMode"
+								value="system"
+								checked={settings.colorMode === "system"}
 							>
-							{ui.settings.autoSummaryDetail}
+							{ui.settings.colorModeSystem}
 						</label>
-						<p class="setting-hint">{ui.settings.chromeAiRequired}</p>
-					</section>
+						<label class="radio-label">
+							<input
+								type="radio"
+								name="colorMode"
+								value="light"
+								checked={settings.colorMode === "light"}
+							>
+							{ui.settings.colorModeLight}
+						</label>
+						<label class="radio-label">
+							<input
+								type="radio"
+								name="colorMode"
+								value="dark"
+								checked={settings.colorMode === "dark"}
+							>
+							{ui.settings.colorModeDark}
+						</label>
+					</div>
+				</section>
 
-					<button type="submit" class="filled submit-button">
-						{ui.settings.saveButton}
-					</button>
-				</form>
-			</div>
-			<script is:inline>
-			document.getElementById("settings-fallback").style.display = "none";
-			</script>
+				<section class="setting-group card">
+					<h2 class="group-title">{ui.settings.autoSummary}</h2>
+					<p class="group-description">{ui.settings.autoSummaryDescription}</p>
+					<label class="checkbox-label">
+						<input
+							type="checkbox"
+							name="autoSummary"
+							checked={settings.autoSummary}
+						>
+						{ui.settings.autoSummaryDetail}
+					</label>
+					<p class="setting-hint">{ui.settings.chromeAiRequired}</p>
+				</section>
+
+				<button type="submit" class="filled submit-button">
+					{ui.settings.saveButton}
+				</button>
+			</form>
 		</div>
 	</div>
 </BaseLayout>
@@ -128,7 +114,7 @@ const formError = result?.error ? ui.settings.saveFailed : null;
 	gap: var(--md-sys-spacing-4);
 }
 
-.settings-fallback {
+.settings-content form {
 	display: flex;
 	flex-direction: column;
 	gap: var(--md-sys-spacing-4);

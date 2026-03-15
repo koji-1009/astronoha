@@ -35,23 +35,38 @@ if (canonicalUrl.searchParams.get("page") === "1") {
 		<meta name="description" content={description}>
 		<link rel="canonical" href={canonicalUrl.href}>
 		<ClientRouter />
+		<!-- Inline: apply color mode immediately to prevent FOUC -->
 		<script is:inline>
-		(() => {
-			var c = null;
-			var s = null;
+		(function () {
 			try {
-				c = document.cookie.match(/astronoha_settings=([^;]+)/);
+				var c = document.cookie.match(/astronoha_settings=([^;]+)/);
+				var s = c ? JSON.parse(atob(c[1])) : null;
+				if (s && (s.colorMode === "light" || s.colorMode === "dark")) {
+					document.documentElement.setAttribute("data-color-mode", s.colorMode);
+				} else {
+					document.documentElement.removeAttribute("data-color-mode");
+				}
+			} catch (e) {}
+		})();
+		</script>
+		<!-- Module: re-apply on ClientRouter navigation -->
+		<script>
+		document.addEventListener("astro:page-load", () => {
+			try {
+				const c = document.cookie.match(/astronoha_settings=([^;]+)/);
 				if (c) {
-					s = JSON.parse(atob(c[1]));
+					const s = JSON.parse(atob(c[1]));
 					if (s.colorMode === "light" || s.colorMode === "dark") {
 						document.documentElement.setAttribute(
 							"data-color-mode",
 							s.colorMode,
 						);
+						return;
 					}
 				}
-			} catch (e) {}
-		})();
+				document.documentElement.removeAttribute("data-color-mode");
+			} catch {}
+		});
 		</script>
 	</head>
 	<body>
