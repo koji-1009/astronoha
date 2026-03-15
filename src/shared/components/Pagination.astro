@@ -1,0 +1,198 @@
+---
+/**
+ * Pagination component with prev/next and page number links.
+ * Renders as a semantic <nav> with <a> links using URL query params.
+ */
+
+import { ui } from "@/i18n/ui";
+
+interface Props {
+	currentPage: number;
+	totalPages: number;
+	baseUrl: string;
+	/** URL query param name for the page number. Defaults to "page". */
+	pageParam?: string;
+}
+
+const { currentPage, totalPages, baseUrl, pageParam = "page" } = Astro.props;
+
+/**
+ * Build a pagination URL by appending or updating the page query param.
+ */
+function buildPageUrl(page: number): string {
+	const url = new URL(baseUrl, "https://placeholder.local");
+	if (page > 1) {
+		url.searchParams.set(pageParam, String(page));
+	} else {
+		url.searchParams.delete(pageParam);
+	}
+	// Preserve existing query params (from, until, etc.)
+	return `${url.pathname}${url.search}`;
+}
+
+/**
+ * Generate the array of page numbers to display.
+ * Shows at most 7 pages with ellipsis gaps.
+ */
+function getPageNumbers(): (number | "ellipsis")[] {
+	if (totalPages <= 7) {
+		return Array.from({ length: totalPages }, (_, i) => i + 1);
+	}
+
+	const pages: (number | "ellipsis")[] = [1];
+
+	if (currentPage > 3) {
+		pages.push("ellipsis");
+	}
+
+	const start = Math.max(2, currentPage - 1);
+	const end = Math.min(totalPages - 1, currentPage + 1);
+	for (let i = start; i <= end; i++) {
+		pages.push(i);
+	}
+
+	if (currentPage < totalPages - 2) {
+		pages.push("ellipsis");
+	}
+
+	pages.push(totalPages);
+
+	return pages;
+}
+
+const pageNumbers = getPageNumbers();
+const hasPrev = currentPage > 1;
+const hasNext = currentPage < totalPages;
+---
+
+{totalPages > 1 && (
+		<nav class="pagination" aria-label={ui.a11y.pageNavigation}>
+			{hasPrev ? (
+				<a
+					href={buildPageUrl(currentPage - 1)}
+					class="pagination-link prev"
+					aria-label={ui.a11y.prevPage}
+				>
+					{ui.a11y.prev}
+				</a>
+			) : (
+				<span class="pagination-link prev disabled" aria-disabled="true">
+					{ui.a11y.prev}
+				</span>
+			)}
+
+			<ol class="pagination-pages">
+				{pageNumbers.map((page) =>
+					page === "ellipsis" ? (
+						<li class="pagination-ellipsis" aria-hidden="true">
+							&hellip;
+						</li>
+					) : page === currentPage ? (
+						<li>
+							<a
+								href={buildPageUrl(page)}
+								class="pagination-link current"
+								aria-current="page"
+							>
+								{page}
+							</a>
+						</li>
+					) : (
+						<li>
+							<a href={buildPageUrl(page)} class="pagination-link">
+								{page}
+							</a>
+						</li>
+					),
+				)}
+			</ol>
+
+			{hasNext ? (
+				<a
+					href={buildPageUrl(currentPage + 1)}
+					class="pagination-link next"
+					aria-label={ui.a11y.nextPage}
+				>
+					{ui.a11y.next}
+				</a>
+			) : (
+				<span class="pagination-link next disabled" aria-disabled="true">
+					{ui.a11y.next}
+				</span>
+			)}
+		</nav>
+	)}
+
+<style>
+.pagination {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--md-sys-spacing-2);
+	padding: var(--md-sys-spacing-6) 0;
+}
+
+.pagination-pages {
+	display: flex;
+	align-items: center;
+	gap: var(--md-sys-spacing-1);
+	list-style: none;
+	padding: 0;
+}
+
+.pagination-link {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 40px;
+	height: 40px;
+	padding: 0 var(--md-sys-spacing-3);
+	border-radius: var(--md-sys-shape-corner-full);
+	font-size: var(--md-sys-typescale-label-large-size);
+	font-weight: var(--md-sys-typescale-label-large-weight);
+	line-height: var(--md-sys-typescale-label-large-line-height);
+	letter-spacing: var(--md-sys-typescale-label-large-tracking);
+	color: var(--md-sys-color-on-surface);
+	text-decoration: none;
+	transition: background-color 0.2s;
+}
+
+.pagination-link:hover:not(.disabled):not(.current) {
+	background: color-mix(
+		in srgb,
+		var(--md-sys-color-on-surface) 8%,
+		transparent
+	);
+}
+
+.pagination-link.current {
+	background: var(--md-sys-color-primary);
+	color: var(--md-sys-color-on-primary);
+}
+
+.pagination-link.disabled {
+	color: var(--md-sys-color-on-surface);
+	opacity: 0.38;
+	cursor: not-allowed;
+}
+
+.pagination-link.prev,
+.pagination-link.next {
+	color: var(--md-sys-color-primary);
+}
+
+.pagination-link.prev.disabled,
+.pagination-link.next.disabled {
+	color: var(--md-sys-color-on-surface);
+}
+
+.pagination-ellipsis {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 40px;
+	height: 40px;
+	color: var(--md-sys-color-on-surface-variant);
+	font-size: var(--md-sys-typescale-body-medium-size);
+}
+</style>

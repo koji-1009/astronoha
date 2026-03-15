@@ -1,0 +1,181 @@
+<searchRetrieveResponse xmlns="http://www.loc.gov/zing/srw/">
+  <version>1.2</version>
+  <numberOfRecords>11419</numberOfRecords>
+  <nextRecordPosition>3</nextRecordPosition>
+  <extraResponseData>
+    &lt;facets&gt;
+      &lt;lst name="REPOSITORY_NO"&gt;
+        &lt;int name="R100000002"&gt;5068&lt;/int&gt;
+        &lt;int name="R000000004"&gt;4124&lt;/int&gt;
+        &lt;int name="R100000136"&gt;1369&lt;/int&gt;
+        &lt;int name="R000000025"&gt;445&lt;/int&gt;
+        &lt;int name="R100000039"&gt;220&lt;/int&gt;
+        &lt;int name="R100000001"&gt;89&lt;/int&gt;
+        &lt;int name="R100000099"&gt;41&lt;/int&gt;
+        &lt;int name="R100000038"&gt;30&lt;/int&gt;
+        &lt;int name="R000000016"&gt;12&lt;/int&gt;
+        &lt;int name="R000000054"&gt;9&lt;/int&gt;
+        &lt;int name="R100000049"&gt;4&lt;/int&gt;
+        &lt;int name="R100000134"&gt;3&lt;/int&gt;
+        &lt;int name="R100000137"&gt;3&lt;/int&gt;
+        &lt;int name="R100000111"&gt;1&lt;/int&gt;
+        &lt;int name="R100000146"&gt;1&lt;/int&gt;
+      &lt;/lst&gt;
+      &lt;lst name="NDC"&gt;
+        &lt;int name="+"&gt;2&lt;/int&gt;
+        &lt;int name="0"&gt;68&lt;/int&gt;
+        &lt;int name="1"&gt;74&lt;/int&gt;
+        &lt;int name="2"&gt;274&lt;/int&gt;
+        &lt;int name="3"&gt;2115&lt;/int&gt;
+        &lt;int name="4"&gt;56&lt;/int&gt;
+        &lt;int name="5"&gt;28&lt;/int&gt;
+        &lt;int name="6"&gt;16&lt;/int&gt;
+        &lt;int name="7"&gt;25&lt;/int&gt;
+        &lt;int name="8"&gt;16&lt;/int&gt;
+        &lt;int name="9"&gt;92&lt;/int&gt;
+        &lt;int name="A"&gt;7&lt;/int&gt;
+        &lt;int name="C"&gt;11&lt;/int&gt;
+        &lt;int name="D"&gt;1&lt;/int&gt;
+        &lt;int name="E"&gt;1&lt;/int&gt;
+        &lt;int name="F"&gt;3&lt;/int&gt;
+        &lt;int name="H"&gt;4&lt;/int&gt;
+        &lt;int name="K"&gt;5&lt;/int&gt;
+        &lt;int name="R"&gt;11&lt;/int&gt;
+        &lt;int name="S"&gt;2&lt;/int&gt;
+        &lt;int name="３"&gt;7&lt;/int&gt;
+        &lt;int name="５"&gt;1&lt;/int&gt;
+      &lt;/lst&gt;
+      &lt;lst name="ISSUED_DATE"&gt;
+        &lt;int name="1000"&gt;1&lt;/int&gt;
+        &lt;int name="1900"&gt;1&lt;/int&gt;
+        &lt;int name="1962"&gt;1&lt;/int&gt;
+        &lt;int name="1963"&gt;1&lt;/int&gt;
+        &lt;int name="1964"&gt;1&lt;/int&gt;
+        &lt;int name="1965"&gt;1&lt;/int&gt;
+        &lt;int name="1967"&gt;1&lt;/int&gt;
+        &lt;int name="1969"&gt;1&lt;/int&gt;
+        &lt;int name="1970"&gt;1&lt;/int&gt;
+        &lt;int name="1972"&gt;2&lt;/int&gt;
+        &lt;int name="1973"&gt;1&lt;/int&gt;
+        &lt;int name="1974"&gt;2&lt;/int&gt;
+        &lt;int name="1975"&gt;2&lt;/int&gt;
+        &lt;int name="1976"&gt;1&lt;/int&gt;
+        &lt;int name="1977"&gt;1&lt;/int&gt;
+        &lt;int name="1978"&gt;2&lt;/int&gt;
+        &lt;int name="1979"&gt;1&lt;/int&gt;
+        &lt;int name="1980"&gt;2&lt;/int&gt;
+        &lt;int name="1981"&gt;2&lt;/int&gt;
+        &lt;int name="1982"&gt;2&lt;/int&gt;
+        &lt;int name="1983"&gt;2&lt;/int&gt;
+        &lt;int name="1984"&gt;2&lt;/int&gt;
+        &lt;int name="1985"&gt;1&lt;/int&gt;
+        &lt;int name="1986"&gt;3&lt;/int&gt;
+        &lt;int name="1987"&gt;3&lt;/int&gt;
+        &lt;int name="1988"&gt;3&lt;/int&gt;
+        &lt;int name="1989"&gt;3&lt;/int&gt;
+        &lt;int name="1990"&gt;6&lt;/int&gt;
+        &lt;int name="1991"&gt;5&lt;/int&gt;
+        &lt;int name="1992"&gt;4&lt;/int&gt;
+        &lt;int name="1993"&gt;5&lt;/int&gt;
+        &lt;int name="1994"&gt;4&lt;/int&gt;
+        &lt;int name="1995"&gt;5&lt;/int&gt;
+        &lt;int name="1996"&gt;4&lt;/int&gt;
+        &lt;int name="1997"&gt;4&lt;/int&gt;
+        &lt;int name="1998"&gt;4&lt;/int&gt;
+        &lt;int name="1999"&gt;6&lt;/int&gt;
+        &lt;int name="2000"&gt;6&lt;/int&gt;
+        &lt;int name="2001"&gt;6&lt;/int&gt;
+        &lt;int name="2002"&gt;4&lt;/int&gt;
+        &lt;int name="2003"&gt;6&lt;/int&gt;
+        &lt;int name="2004"&gt;8&lt;/int&gt;
+        &lt;int name="2005"&gt;7&lt;/int&gt;
+        &lt;int name="2006"&gt;7&lt;/int&gt;
+        &lt;int name="2007"&gt;9&lt;/int&gt;
+        &lt;int name="2008"&gt;9&lt;/int&gt;
+        &lt;int name="2009"&gt;9&lt;/int&gt;
+        &lt;int name="2010"&gt;10&lt;/int&gt;
+        &lt;int name="2011"&gt;11&lt;/int&gt;
+        &lt;int name="2012"&gt;11&lt;/int&gt;
+      &lt;/lst&gt;
+      &lt;lst name="LIBRARY"&gt;
+        &lt;int name="国立国会図書館"&gt;9195&lt;/int&gt;
+        &lt;int name="東京都立中央図書館"&gt;1394&lt;/int&gt;
+        &lt;int name="大阪府立中央図書館"&gt;1356&lt;/int&gt;
+        &lt;int name="鳥取県立図書館"&gt;1221&lt;/int&gt;
+        &lt;int name="岡山県立図書館"&gt;1208&lt;/int&gt;
+        &lt;int name="大阪市立図書館"&gt;1104&lt;/int&gt;
+        &lt;int name="横浜市立図書館"&gt;1101&lt;/int&gt;
+        &lt;int name="長崎県立長崎図書館"&gt;1088&lt;/int&gt;
+        &lt;int name="高知県立図書館"&gt;966&lt;/int&gt;
+        &lt;int name="滋賀県立図書館"&gt;907&lt;/int&gt;
+        &lt;int name="石川県立図書館"&gt;853&lt;/int&gt;
+        &lt;int name="堺市立中央図書館"&gt;848&lt;/int&gt;
+        &lt;int name="さいたま市立中央図書館"&gt;841&lt;/int&gt;
+        &lt;int name="茨城県立図書館"&gt;811&lt;/int&gt;
+        &lt;int name="福岡県立図書館"&gt;797&lt;/int&gt;
+        &lt;int name="佐賀県立図書館"&gt;785&lt;/int&gt;
+        &lt;int name="広島市立中央図書館"&gt;779&lt;/int&gt;
+        &lt;int name="静岡県立中央図書館"&gt;773&lt;/int&gt;
+        &lt;int name="神奈川県立図書館"&gt;707&lt;/int&gt;
+        &lt;int name="京都府立図書館"&gt;667&lt;/int&gt;
+        &lt;int name="大分県立図書館"&gt;649&lt;/int&gt;
+        &lt;int name="静岡市立中央図書館"&gt;630&lt;/int&gt;
+        &lt;int name="香川県立図書館"&gt;625&lt;/int&gt;
+        &lt;int name="札幌市中央図書館"&gt;622&lt;/int&gt;
+        &lt;int name="川崎市立図書館"&gt;604&lt;/int&gt;
+        &lt;int name="広島県立図書館"&gt;599&lt;/int&gt;
+        &lt;int name="山口県立山口図書館"&gt;597&lt;/int&gt;
+        &lt;int name="千葉県立中央図書館"&gt;594&lt;/int&gt;
+        &lt;int name="富山県立図書館"&gt;578&lt;/int&gt;
+        &lt;int name="福井県立図書館"&gt;566&lt;/int&gt;
+        &lt;int name="名古屋市図書館"&gt;564&lt;/int&gt;
+        &lt;int name="山梨県立図書館"&gt;556&lt;/int&gt;
+        &lt;int name="岐阜県図書館"&gt;555&lt;/int&gt;
+        &lt;int name="鹿児島県立図書館"&gt;555&lt;/int&gt;
+        &lt;int name="和歌山県立図書館"&gt;551&lt;/int&gt;
+        &lt;int name="徳島県立図書館"&gt;544&lt;/int&gt;
+        &lt;int name="群馬県立図書館"&gt;534&lt;/int&gt;
+        &lt;int name="愛媛県立図書館"&gt;501&lt;/int&gt;
+        &lt;int name="千葉市中央図書館"&gt;496&lt;/int&gt;
+        &lt;int name="相模原市立図書館"&gt;494&lt;/int&gt;
+        &lt;int name="奈良県立図書情報館"&gt;482&lt;/int&gt;
+        &lt;int name="愛知県図書館"&gt;482&lt;/int&gt;
+        &lt;int name="宮城県図書館"&gt;480&lt;/int&gt;
+        &lt;int name="秋田県立図書館"&gt;469&lt;/int&gt;
+        &lt;int name="北海道立図書館"&gt;462&lt;/int&gt;
+        &lt;int name="福島県立図書館"&gt;457&lt;/int&gt;
+        &lt;int name="青森県立図書館"&gt;441&lt;/int&gt;
+        &lt;int name="福岡市総合図書館"&gt;437&lt;/int&gt;
+        &lt;int name="兵庫県立図書館"&gt;428&lt;/int&gt;
+        &lt;int name="埼玉県立熊谷図書館"&gt;419&lt;/int&gt;
+      &lt;/lst&gt;
+    &lt;/facets&gt;
+  </extraResponseData>
+  <records>
+    <record>
+      <recordSchema>info:srw/schema/1/dc-v1.1</recordSchema>
+      <recordPacking>string</recordPacking>
+      <recordData>
+      &lt;srw_dc:dc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:srw_dc="info:srw/schema/1/dc-v1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="info:srw/schema/1/dc-v1.1 http://www.loc.gov/standards/sru/dc-schema.xsd"&gt;
+          &lt;dc:title&gt;アーカイブズ学研究&lt;/dc:title&gt;
+          &lt;dc:creator&gt;日本アーカイブズ学会 編&lt;/dc:creator&gt;
+          &lt;dc:publisher&gt;日本アーカイブズ学会&lt;/dc:publisher&gt;
+          &lt;dc:language&gt;jpn&lt;/dc:language&gt;&lt;dc:language&gt;eng&lt;/dc:language&gt;
+      &lt;/srw_dc:dc&gt;
+    </recordData>
+      <recordPosition>1</recordPosition>
+    </record>
+    <record>
+      <recordSchema>info:srw/schema/1/dc-v1.1</recordSchema>
+      <recordPacking>string</recordPacking>
+      <recordData>
+      &lt;srw_dc:dc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:srw_dc="info:srw/schema/1/dc-v1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="info:srw/schema/1/dc-v1.1 http://www.loc.gov/standards/sru/dc-schema.xsd"&gt;
+          &lt;dc:title&gt;アートな時間 映画 日本独立 現憲法の成立過程を描写 監督念願のテーマが実現&lt;/dc:title&gt;
+          &lt;dc:creator&gt;野島 孝一&lt;/dc:creator&gt;
+          &lt;dc:language&gt;jpn&lt;/dc:language&gt;
+      &lt;/srw_dc:dc&gt;
+    </recordData>
+      <recordPosition>2</recordPosition>
+    </record>
+  </records>
+</searchRetrieveResponse>

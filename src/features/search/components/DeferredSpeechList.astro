@@ -1,0 +1,206 @@
+---
+/**
+ * Server Island: speech list for a single source (kokkai or teikoku).
+ *
+ * Used in "both" mode to render each source independently with its own
+ * pagination. Deferred via server:defer so the page shell returns immediately.
+ */
+
+import { ui } from "@/i18n/ui";
+import Pagination from "@/shared/components/Pagination.astro";
+import { formatDate, truncateSpeech } from "@/shared/lib/format";
+
+interface Props {
+	keyword: string;
+	source: "kokkai" | "teikoku";
+	currentPage: number;
+	baseUrl: string;
+	pageParam: string;
+	from?: string;
+	until?: string;
+}
+
+const { keyword, source, currentPage, baseUrl, pageParam, from, until } =
+	Astro.props;
+
+const pageSize = 10;
+const startRecord = (currentPage - 1) * pageSize + 1;
+
+const label =
+	source === "kokkai" ? ui.search.targetKokkai : ui.search.targetTeikoku;
+
+let speeches: Array<{
+	speechID: string;
+	nameOfHouse: string;
+	nameOfMeeting: string;
+	issue: string;
+	date: string | null;
+	speaker: string;
+	speech: string;
+}> = [];
+let totalRecords = 0;
+let errorMessage: string | null = null;
+
+try {
+	const mod =
+		source === "kokkai"
+			? await import("@/features/search/data/kokkai")
+			: await import("@/features/search/data/teikoku");
+	const result = await mod.searchSpeeches({
+		keyword,
+		maximumRecords: pageSize,
+		startRecord,
+		from,
+		until,
+	});
+	speeches = result.speechRecord ?? [];
+	totalRecords = result.numberOfRecords ?? 0;
+} catch (error) {
+	const errorFn =
+		source === "kokkai"
+			? ui.error.kokkaiSearchFailed
+			: ui.error.teikokuSearchFailed;
+	errorMessage = errorFn(
+		error instanceof Error ? error.message : ui.error.unknownDetail,
+	);
+}
+
+const totalPages = Math.ceil(totalRecords / pageSize);
+---
+
+<section class="source-section">
+	<h2 class="section-title">
+		{label}（{ui.search.resultsCount(totalRecords)}）
+	</h2>
+
+	{errorMessage && (
+		<div class="warning-container card">
+			<p class="warning-message">{errorMessage}</p>
+		</div>
+	)}
+
+	{speeches.length > 0 && (
+		<ol class="speech-list">
+			{speeches.map((speech) => (
+				<li>
+					<a
+						href={`/word/${encodeURIComponent(keyword)}/${encodeURIComponent(speech.speechID)}`}
+						class="card speech-card"
+					>
+						<div class="speech-meta">
+							<span class="speech-house">{speech.nameOfHouse}</span>
+							<span class="speech-meeting">
+								{speech.nameOfMeeting} {speech.issue}
+							</span>
+							<time class="speech-date" datetime={speech.date ?? ""}>
+								{formatDate(speech.date)}
+							</time>
+						</div>
+						<p class="speech-speaker">{speech.speaker}</p>
+						<p class="speech-excerpt">
+							{truncateSpeech(speech.speech)}
+						</p>
+					</a>
+				</li>
+			))}
+		</ol>
+	)}
+
+	{speeches.length === 0 && !errorMessage && (
+		<p class="no-results">{ui.search.noResults(keyword)}</p>
+	)}
+
+	<Pagination
+		currentPage={currentPage}
+		totalPages={totalPages}
+		baseUrl={baseUrl}
+		pageParam={pageParam}
+	/>
+</section>
+
+<style>
+.source-section {
+	padding-bottom: var(--md-sys-spacing-6);
+	border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.speech-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-3);
+	list-style: none;
+	padding: 0;
+}
+
+.speech-card {
+	display: block;
+	text-decoration: none;
+	color: inherit;
+	transition:
+		box-shadow 0.2s,
+		background-color 0.2s;
+}
+
+.speech-card:hover {
+	box-shadow: var(--md-sys-elevation-2);
+	background: var(--md-sys-color-surface-container);
+}
+
+.speech-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--md-sys-spacing-2);
+	align-items: center;
+	margin-bottom: var(--md-sys-spacing-2);
+}
+
+.speech-house {
+	display: inline-block;
+	padding: var(--md-sys-spacing-0) var(--md-sys-spacing-2);
+	background: var(--md-sys-color-tertiary-container);
+	color: var(--md-sys-color-on-tertiary-container);
+	border-radius: var(--md-sys-shape-corner-extra-small);
+	font-size: var(--md-sys-typescale-label-small-size);
+	font-weight: var(--md-sys-typescale-label-small-weight);
+}
+
+.speech-meeting {
+	font-size: var(--md-sys-typescale-label-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.speech-date {
+	font-size: var(--md-sys-typescale-label-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+	margin-left: auto;
+}
+
+.speech-speaker {
+	font-size: var(--md-sys-typescale-title-small-size);
+	font-weight: var(--md-sys-typescale-title-small-weight);
+	color: var(--md-sys-color-primary);
+	margin-bottom: var(--md-sys-spacing-1);
+}
+
+.speech-excerpt {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	line-height: var(--md-sys-typescale-body-medium-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.no-results {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+@media (max-width: 599px) {
+	.speech-meta {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.speech-date {
+		margin-left: 0;
+	}
+}
+</style>

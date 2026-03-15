@@ -1,0 +1,297 @@
+---
+/**
+ * About page — static information about the app.
+ *
+ * CRZ Layer 1: pure HTML, no JavaScript needed.
+ */
+
+import Attribution from "@/shared/components/Attribution.astro";
+import BaseLayout from "@/shared/layout/BaseLayout.astro";
+---
+
+<BaseLayout
+	title="このサイトについて"
+	description="明治から令和まで、150年の議会発言を横断検索できるWebサイトです"
+>
+	<div class="about-page">
+		<h1 class="page-title">150年の議会記録を、ひとつの検索窓から</h1>
+
+		<section class="about-section">
+			<p class="section-body">
+				このサイトでは、国立国会図書館が公開するAPIを通じて、
+				明治23年（1890年）の帝国議会から現在の国会まで、
+				150年にわたる議会発言を横断的に検索できます。
+			</p>
+			<p class="section-body">
+				ある言葉が、いつ、誰によって、どのような文脈で使われたのか。
+				キーワードの出現傾向を時代ごとに追い、
+				発言者のプロフィールや関連書籍とあわせて読むことで、
+				議会記録をより深く探索できます。
+			</p>
+		</section>
+
+		<section class="about-section">
+			<h2 class="section-title">できること</h2>
+			<ul class="feature-list">
+				<li class="feature-item">
+					<span class="feature-name">キーワード検索</span>
+					<span class="feature-description">
+						帝国議会（1890〜1947年）と国会（1947年〜）の会議録を一括検索
+					</span>
+				</li>
+				<li class="feature-item">
+					<span class="feature-name">年代ヒートマップ</span>
+					<span class="feature-description">
+						検索キーワードが各年代でどれだけ使われたかを視覚的に表示
+					</span>
+				</li>
+				<li class="feature-item">
+					<span class="feature-name">発言者プロフィール</span>
+					<span class="feature-description">
+						発言者の所属・役職と、よく使うキーワードを一覧表示
+					</span>
+				</li>
+				<li class="feature-item">
+					<span class="feature-name">関連書籍</span>
+					<span class="feature-description">
+						国立国会図書館の蔵書からキーワードに関連する書籍を表示
+					</span>
+				</li>
+				<li class="feature-item">
+					<span class="feature-name">ブラウザAI</span>
+					<span class="feature-description">
+						対応ブラウザでは、戦前の文語体発言の現代語要約や検索キーワード提案をブラウザ内で実行（任意機能）
+					</span>
+				</li>
+			</ul>
+		</section>
+
+		<section class="about-section">
+			<h2 class="section-title">データの出典</h2>
+			<ul class="api-list">
+				<li class="card api-card">
+					<h3 class="api-name">
+						<a
+							href="https://kokkai.ndl.go.jp/api.html"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							国会会議録検索システム API
+						</a>
+					</h3>
+					<p class="api-description">
+						1947年（昭和22年）以降の国会（衆議院・参議院）の会議録を検索できるAPIです。
+					</p>
+				</li>
+				<li class="card api-card">
+					<h3 class="api-name">
+						<a
+							href="https://teikokugikai-i.ndl.go.jp/"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							帝国議会会議録検索システム API
+						</a>
+					</h3>
+					<p class="api-description">
+						1890年（明治23年）から1947年（昭和22年）までの帝国議会の会議録を検索できるAPIです。
+					</p>
+				</li>
+				<li class="card api-card">
+					<h3 class="api-name">
+						<a
+							href="https://ndlsearch.ndl.go.jp/"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							NDLサーチ API
+						</a>
+					</h3>
+					<p class="api-description">
+						国立国会図書館の蔵書や全国の図書館の資料を検索できるAPIです。
+						関連書籍の検索と書影の表示に利用しています。
+					</p>
+				</li>
+			</ul>
+		</section>
+
+		<section class="about-section">
+			<h2 class="section-title">利用規約・著作権</h2>
+			<div class="card terms-card">
+				<p class="section-body">
+					本サイトが表示するデータは、
+					<a
+						href="https://www.ndl.go.jp/jp/sitepolicy/index.html"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						国立国会図書館ウェブサイトのコンテンツ利用規約
+					</a>
+					に基づいて利用しています。
+				</p>
+				<p class="section-body">
+					個々の発言の著作権は発言者に帰属します（著作権保護期間満了のものを除く）。
+				</p>
+			</div>
+		</section>
+
+		<section class="about-section">
+			<h2 class="section-title">ソースコード</h2>
+			<p class="section-body">
+				このサイトのソースコードはGitHubで公開しています。
+				<a
+					href="https://github.com/koji-1009/astronoha"
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					koji-1009/astronoha
+				</a>
+			</p>
+		</section>
+
+		<footer class="page-footer"><Attribution /></footer>
+	</div>
+</BaseLayout>
+
+<style>
+.about-page {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-8);
+	max-width: 720px;
+}
+
+.page-title {
+	font-size: var(--md-sys-typescale-headline-large-size);
+	line-height: var(--md-sys-typescale-headline-large-line-height);
+	font-weight: var(--md-sys-typescale-headline-large-weight);
+	color: var(--md-sys-color-on-surface);
+}
+
+.about-section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-4);
+}
+
+.section-title {
+	font-size: var(--md-sys-typescale-title-large-size);
+	line-height: var(--md-sys-typescale-title-large-line-height);
+	font-weight: var(--md-sys-typescale-title-large-weight);
+	color: var(--md-sys-color-on-surface);
+}
+
+.section-body {
+	font-size: var(--md-sys-typescale-body-large-size);
+	line-height: var(--md-sys-typescale-body-large-line-height);
+	letter-spacing: var(--md-sys-typescale-body-large-tracking);
+	color: var(--md-sys-color-on-surface);
+}
+
+.section-body + .section-body {
+	margin-top: var(--md-sys-spacing-3);
+}
+
+.section-body a {
+	color: var(--md-sys-color-primary);
+	text-decoration: none;
+}
+
+.section-body a:hover {
+	text-decoration: underline;
+}
+
+.feature-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-2);
+	list-style: none;
+	padding: 0;
+}
+
+.feature-item {
+	display: flex;
+	gap: var(--md-sys-spacing-4);
+	align-items: baseline;
+	padding: var(--md-sys-spacing-2) 0;
+	border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.feature-item:last-child {
+	border-bottom: none;
+}
+
+.feature-name {
+	font-size: var(--md-sys-typescale-label-large-size);
+	font-weight: var(--md-sys-typescale-label-large-weight);
+	color: var(--md-sys-color-on-surface);
+	min-width: 160px;
+	flex-shrink: 0;
+}
+
+.feature-description {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	line-height: var(--md-sys-typescale-body-medium-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.api-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-3);
+	list-style: none;
+	padding: 0;
+}
+
+.api-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-2);
+}
+
+.api-name {
+	font-size: var(--md-sys-typescale-title-medium-size);
+	font-weight: var(--md-sys-typescale-title-medium-weight);
+}
+
+.api-name a {
+	color: var(--md-sys-color-primary);
+	text-decoration: none;
+}
+
+.api-name a:hover {
+	text-decoration: underline;
+}
+
+.api-description {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	line-height: var(--md-sys-typescale-body-medium-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.terms-card {
+	display: flex;
+	flex-direction: column;
+}
+
+.page-footer {
+	padding-top: var(--md-sys-spacing-6);
+	border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+@media (max-width: 599px) {
+	.page-title {
+		font-size: var(--md-sys-typescale-headline-medium-size);
+		line-height: var(--md-sys-typescale-headline-medium-line-height);
+	}
+
+	.feature-item {
+		flex-direction: column;
+		gap: var(--md-sys-spacing-1);
+	}
+
+	.feature-name {
+		min-width: auto;
+	}
+}
+</style>

@@ -1,0 +1,207 @@
+---
+/**
+ * Settings page.
+ *
+ * CRZ Layer 1-2: HTML form works without JavaScript.
+ * CRZ Layer 3: SettingsForm island handles live preview and
+ * Astro Action calls to persist settings via HttpOnly cookie.
+ *
+ * Current settings are passed as props from Astro.locals.
+ */
+
+import { actions } from "astro:actions";
+import SettingsForm from "@/features/settings/components/SettingsForm";
+import { ui } from "@/i18n/ui";
+import BaseLayout from "@/shared/layout/BaseLayout.astro";
+
+const settings = Astro.locals.settings;
+
+const result = Astro.getActionResult(actions.updateSettingsForm);
+if (result && !result.error) {
+	return Astro.redirect("/settings");
+}
+const formError = result?.error ? ui.settings.saveFailed : null;
+---
+
+<BaseLayout title={ui.settings.title} description={ui.settings.description}>
+	<div class="settings-page">
+		<h1 class="page-title">{ui.settings.title}</h1>
+		<p class="page-description">{ui.settings.description}</p>
+
+		<div class="settings-content">
+			<!-- Layer 3: React Island for JS-enabled experience -->
+			<SettingsForm client:idle currentSettings={settings} />
+
+			<!-- Layer 1-2: HTML form (default). Hidden by inline script when JS is available. -->
+			<div class="settings-fallback" id="settings-fallback">
+				{formError && (
+					<p class="form-error">{formError}</p>
+				)}
+
+				<form method="POST" action={actions.updateSettingsForm}>
+					<section class="setting-group card">
+						<h2 class="group-title">{ui.settings.colorMode}</h2>
+						<p class="group-description">{ui.settings.colorModeDescription}</p>
+						<div class="radio-group">
+							<label class="radio-label">
+								<input
+									type="radio"
+									name="colorMode"
+									value="system"
+									checked={settings.colorMode === "system"}
+								>
+								{ui.settings.colorModeSystem}
+							</label>
+							<label class="radio-label">
+								<input
+									type="radio"
+									name="colorMode"
+									value="light"
+									checked={settings.colorMode === "light"}
+								>
+								{ui.settings.colorModeLight}
+							</label>
+							<label class="radio-label">
+								<input
+									type="radio"
+									name="colorMode"
+									value="dark"
+									checked={settings.colorMode === "dark"}
+								>
+								{ui.settings.colorModeDark}
+							</label>
+						</div>
+					</section>
+
+					<section class="setting-group card">
+						<h2 class="group-title">{ui.settings.autoSummary}</h2>
+						<p class="group-description">
+							{ui.settings.autoSummaryDescription}
+						</p>
+						<label class="checkbox-label">
+							<input
+								type="checkbox"
+								name="autoSummary"
+								checked={settings.autoSummary}
+							>
+							{ui.settings.autoSummaryDetail}
+						</label>
+						<p class="setting-hint">{ui.settings.chromeAiRequired}</p>
+					</section>
+
+					<button type="submit" class="filled submit-button">
+						{ui.settings.saveButton}
+					</button>
+				</form>
+			</div>
+			<script is:inline>
+			document.getElementById("settings-fallback").style.display = "none";
+			</script>
+		</div>
+	</div>
+</BaseLayout>
+
+<style>
+.settings-page {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-6);
+	max-width: 640px;
+}
+
+.page-title {
+	font-size: var(--md-sys-typescale-headline-large-size);
+	line-height: var(--md-sys-typescale-headline-large-line-height);
+	font-weight: var(--md-sys-typescale-headline-large-weight);
+	color: var(--md-sys-color-on-surface);
+}
+
+.page-description {
+	font-size: var(--md-sys-typescale-body-large-size);
+	line-height: var(--md-sys-typescale-body-large-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.settings-content {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-4);
+}
+
+.settings-fallback {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-4);
+}
+
+.form-error {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	color: var(--md-sys-color-error);
+	padding: var(--md-sys-spacing-4);
+	background: var(--md-sys-color-error-container);
+	border-radius: var(--md-sys-shape-corner-medium);
+}
+
+.setting-group {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-3);
+}
+
+.group-title {
+	font-size: var(--md-sys-typescale-title-medium-size);
+	font-weight: var(--md-sys-typescale-title-medium-weight);
+	line-height: var(--md-sys-typescale-title-medium-line-height);
+	color: var(--md-sys-color-on-surface);
+}
+
+.group-description {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	line-height: var(--md-sys-typescale-body-medium-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.radio-group {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-2);
+}
+
+.radio-label,
+.checkbox-label {
+	display: flex;
+	align-items: center;
+	gap: var(--md-sys-spacing-2);
+	padding: var(--md-sys-spacing-2) 0;
+	font-size: var(--md-sys-typescale-body-large-size);
+	line-height: var(--md-sys-typescale-body-large-line-height);
+	color: var(--md-sys-color-on-surface);
+	cursor: pointer;
+}
+
+.radio-label input[type="radio"],
+.checkbox-label input[type="checkbox"] {
+	accent-color: var(--md-sys-color-primary);
+	width: 20px;
+	height: 20px;
+}
+
+.setting-hint {
+	font-size: var(--md-sys-typescale-body-small-size);
+	line-height: var(--md-sys-typescale-body-small-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+	padding-left: var(--md-sys-spacing-8);
+}
+
+.submit-button {
+	align-self: flex-start;
+	margin-top: var(--md-sys-spacing-2);
+}
+
+@media (max-width: 599px) {
+	.page-title {
+		font-size: var(--md-sys-typescale-headline-medium-size);
+		line-height: var(--md-sys-typescale-headline-medium-line-height);
+	}
+}
+</style>

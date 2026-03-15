@@ -1,0 +1,37 @@
+{
+	"numberOfRecords": 15,
+	"numberOfReturn": 1,
+	"startRecord": 1,
+	"nextRecordPosition": 2,
+	"meetingRecord": [
+		{
+			"issueID": "121004005X01020240131",
+			"nameOfHouse": "衆議院",
+			"nameOfMeeting": "本会議",
+			"issue": "第10号",
+			"date": "2024-01-31",
+			"meetingURL": "https://kokkai.ndl.go.jp/txt/121004005X01020240131",
+			"session": 213,
+			"speechRecord": [
+				{
+					"speechID": "121004005X01020240131001",
+					"speechOrder": 1,
+					"speaker": "山田太郎",
+					"speech": "この法案について申し上げます。",
+					"speechURL": "https://kokkai.ndl.go.jp/txt/121004005X01020240131/001",
+					"speakerYomi": "やまだたろう",
+					"speakerGroup": "自由民主党"
+				},
+				{
+					"speechID": "121004005X01020240131002",
+					"speechOrder": 2,
+					"speaker": "佐藤花子",
+					"speech": "ただいまの山田議員のご質問にお答えいたします。",
+					"speechURL": "https://kokkai.ndl.go.jp/txt/121004005X01020240131/002",
+					"speakerYomi": "さとうはなこ",
+					"speakerGroup": "内閣"
+				}
+			]
+		}
+	]
+}

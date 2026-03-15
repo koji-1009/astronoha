@@ -1,0 +1,93 @@
+---
+/**
+ * Server Island: related books for search results page.
+ *
+ * Deferred via server:defer to avoid blocking main search results
+ * with the sequential NDL Search API call.
+ */
+
+import { ui } from "@/i18n/ui";
+
+interface Props {
+	keyword: string;
+}
+
+const { keyword } = Astro.props;
+
+const { searchBooks } = await import("@/features/search/data/ndl-search");
+const relatedBooks = await searchBooks(keyword, { count: 5 });
+const books = relatedBooks?.items ?? [];
+---
+
+{books.length > 0 && (
+	<section class="books-section">
+		<h2 class="section-title">{ui.search.relatedBooks}</h2>
+		<ul class="book-list">
+			{books.map((book) => (
+				<li class="card book-card">
+					<a
+						href={book.link}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="book-link"
+					>
+						<p class="book-title">{book.title}</p>
+						{book.author && (
+							<p class="book-author">{book.author}</p>
+						)}
+						{book.publisher && (
+							<p class="book-publisher">{book.publisher}</p>
+						)}
+						{book.date && (
+							<p class="book-date">{book.date}</p>
+						)}
+					</a>
+				</li>
+			))}
+		</ul>
+	</section>
+)}
+
+<style>
+.books-section {
+	margin-top: var(--md-sys-spacing-4);
+}
+
+.book-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: var(--md-sys-spacing-3);
+	list-style: none;
+	padding: 0;
+}
+
+.book-card {
+	display: flex;
+}
+
+.book-link {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-1);
+	text-decoration: none;
+	color: inherit;
+	width: 100%;
+}
+
+.book-link:hover {
+	text-decoration: underline;
+}
+
+.book-title {
+	font-size: var(--md-sys-typescale-title-small-size);
+	font-weight: var(--md-sys-typescale-title-small-weight);
+	color: var(--md-sys-color-on-surface);
+}
+
+.book-author,
+.book-publisher,
+.book-date {
+	font-size: var(--md-sys-typescale-body-small-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+</style>

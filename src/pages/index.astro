@@ -1,0 +1,326 @@
+---
+/**
+ * Top page — search form.
+ *
+ * CRZ Layer 1: plain HTML form, no JavaScript needed.
+ * The form submits via GET to this same page. Frontmatter reads the
+ * query param and redirects to /word/{keyword}.
+ */
+
+import { ui } from "@/i18n/ui";
+import BaseLayout from "@/shared/layout/BaseLayout.astro";
+
+const q = Astro.url.searchParams.get("q")?.trim();
+const targetParam = Astro.url.searchParams.get("target");
+if (q) {
+	const params = targetParam
+		? `?target=${encodeURIComponent(targetParam)}`
+		: "";
+	return Astro.redirect(`/word/${encodeURIComponent(q)}${params}`);
+}
+
+const searchTarget: "kokkai" | "teikoku" | "both" =
+	targetParam === "kokkai" ||
+	targetParam === "teikoku" ||
+	targetParam === "both"
+		? targetParam
+		: "both";
+---
+
+<BaseLayout
+	title="言葉で探す150年の議会"
+	description="国立国会図書館APIを横断検索し、明治〜令和の国会・帝国議会の発言を探索するWebアプリケーション"
+>
+	<div class="hero">
+		<h1 class="hero-title">言葉で探す、150年の議会</h1>
+		<p class="hero-description">
+			国会会議録と帝国議会会議録を横断検索し、<br>
+			ある言葉が明治から令和までの議会でいつ・どのように使われたかを探索します。
+		</p>
+
+		<form method="GET" class="search-form">
+			<label for="search-input" class="visually-hidden"
+				>{ui.a11y.searchKeyword}</label
+			>
+			<div class="search-field">
+				<input
+					id="search-input"
+					type="text"
+					name="q"
+					class="outlined"
+					placeholder={ui.search.placeholder}
+					autocomplete="off"
+					required
+				>
+				{searchTarget !== "both" && (
+					<input type="hidden" name="target" value={searchTarget} />
+				)}
+				<button type="submit" class="filled">{ui.search.button}</button>
+			</div>
+		</form>
+
+		<nav class="target-chips" aria-label={ui.search.targetLabel}>
+			{(["both", "kokkai", "teikoku"] as const).map((t) => {
+				const label = t === "both" ? ui.search.targetBoth : t === "kokkai" ? ui.search.targetKokkai : ui.search.targetTeikoku;
+				const href = t === "both" ? "/" : `/?target=${t}`;
+				return searchTarget === t
+					? <span class="target-chip active" aria-current="true">{label}</span>
+					: <a href={href} class="target-chip">{label}</a>;
+			})}
+		</nav>
+
+		<div class="search-examples">
+			<p class="examples-label">{ui.search.examplesLabel}</p>
+			<ul class="examples-list">
+				<li>
+					<button type="button" class="example-keyword" data-keyword="憲法">
+						憲法
+					</button>
+				</li>
+				<li>
+					<button type="button" class="example-keyword" data-keyword="教育">
+						教育
+					</button>
+				</li>
+				<li>
+					<button type="button" class="example-keyword" data-keyword="予算">
+						予算
+					</button>
+				</li>
+				<li>
+					<button type="button" class="example-keyword" data-keyword="外交">
+						外交
+					</button>
+				</li>
+				<li>
+					<button type="button" class="example-keyword" data-keyword="鉄道">
+						鉄道
+					</button>
+				</li>
+			</ul>
+		</div>
+
+		<script>
+		document.addEventListener("astro:page-load", () => {
+			const input = document.querySelector<HTMLInputElement>(
+				".search-form input[name='q']",
+			);
+			if (!input) return;
+			for (const btn of document.querySelectorAll<HTMLButtonElement>(
+				".example-keyword",
+			)) {
+				btn.addEventListener("click", () => {
+					input.value = btn.dataset.keyword ?? "";
+					input.focus();
+				});
+			}
+		});
+		</script>
+	</div>
+
+	<section class="features">
+		<h2 class="section-title">できること</h2>
+		<div class="feature-grid">
+			<div class="card feature-card">
+				<h3 class="feature-title">横断検索</h3>
+				<p class="feature-body">
+					帝国議会（1890〜1947年）と国会（1947年〜現在）の会議録を、単一のキーワードで横断検索できます。
+				</p>
+			</div>
+			<div class="card feature-card">
+				<h3 class="feature-title">年代ヒートマップ</h3>
+				<p class="feature-body">
+					検索結果を年代別のヒートマップで可視化し、言葉の使用頻度の変遷を一覧できます。
+				</p>
+			</div>
+			<div class="card feature-card">
+				<h3 class="feature-title">発言者プロファイル</h3>
+				<p class="feature-body">
+					発言者名で検索し、その議員の頻出キーワードと関連書籍をプロファイルとして表示できます。
+				</p>
+			</div>
+			<div class="card feature-card">
+				<h3 class="feature-title">タイムライン</h3>
+				<p class="feature-body">
+					議事録とNDLサーチの出版物を日付軸で重ね合わせ、議論と書籍出版の関係を閲覧できます。
+				</p>
+			</div>
+		</div>
+	</section>
+</BaseLayout>
+
+<style>
+.hero {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	padding: var(--md-sys-spacing-16) 0 var(--md-sys-spacing-12);
+}
+
+.hero-title {
+	font-size: var(--md-sys-typescale-headline-large-size);
+	line-height: var(--md-sys-typescale-headline-large-line-height);
+	font-weight: var(--md-sys-typescale-headline-large-weight);
+	color: var(--md-sys-color-on-surface);
+}
+
+.hero-description {
+	font-size: var(--md-sys-typescale-body-large-size);
+	line-height: var(--md-sys-typescale-body-large-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+	margin-top: var(--md-sys-spacing-4);
+	max-width: 560px;
+}
+
+.search-form {
+	margin-top: var(--md-sys-spacing-8);
+	width: 100%;
+	max-width: 560px;
+}
+
+.search-field {
+	display: flex;
+	gap: var(--md-sys-spacing-2);
+}
+
+.search-field input {
+	flex: 1;
+	height: 48px;
+	font-size: var(--md-sys-typescale-body-large-size);
+}
+
+.search-field button {
+	flex-shrink: 0;
+	height: 48px;
+}
+
+.target-chips {
+	display: flex;
+	gap: var(--md-sys-spacing-2);
+	margin-top: var(--md-sys-spacing-3);
+}
+
+.target-chip {
+	display: inline-flex;
+	align-items: center;
+	padding: var(--md-sys-spacing-1) var(--md-sys-spacing-3);
+	border-radius: var(--md-sys-shape-corner-small);
+	font-size: var(--md-sys-typescale-label-large-size);
+	font-weight: var(--md-sys-typescale-label-large-weight);
+	text-decoration: none;
+	border: 1px solid var(--md-sys-color-outline);
+	color: var(--md-sys-color-on-surface-variant);
+	background: transparent;
+	transition: background-color 0.15s;
+}
+
+.target-chip:hover {
+	background: color-mix(
+		in srgb,
+		var(--md-sys-color-on-surface) 8%,
+		transparent
+	);
+}
+
+.target-chip.active {
+	background: var(--md-sys-color-secondary-container);
+	color: var(--md-sys-color-on-secondary-container);
+	border-color: transparent;
+}
+
+.search-examples {
+	display: flex;
+	align-items: center;
+	gap: var(--md-sys-spacing-2);
+	margin-top: var(--md-sys-spacing-4);
+}
+
+.examples-label {
+	font-size: var(--md-sys-typescale-label-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.examples-list {
+	display: flex;
+	gap: var(--md-sys-spacing-2);
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.example-keyword {
+	display: inline-flex;
+	align-items: center;
+	padding: var(--md-sys-spacing-1) var(--md-sys-spacing-3);
+	border: none;
+	border-radius: var(--md-sys-shape-corner-small);
+	background: var(--md-sys-color-secondary-container);
+	color: var(--md-sys-color-on-secondary-container);
+	font-size: var(--md-sys-typescale-label-large-size);
+	font-weight: var(--md-sys-typescale-label-large-weight);
+	cursor: pointer;
+	transition: box-shadow 0.2s;
+}
+
+.example-keyword:hover {
+	box-shadow: var(--md-sys-elevation-1);
+}
+
+.features {
+	padding: var(--md-sys-spacing-12) 0;
+}
+
+.section-title {
+	font-size: var(--md-sys-typescale-headline-small-size);
+	line-height: var(--md-sys-typescale-headline-small-line-height);
+	font-weight: var(--md-sys-typescale-headline-small-weight);
+	color: var(--md-sys-color-on-surface);
+	text-align: center;
+	margin-bottom: var(--md-sys-spacing-8);
+}
+
+.feature-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: var(--md-sys-spacing-4);
+}
+
+.feature-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-2);
+}
+
+.feature-title {
+	font-size: var(--md-sys-typescale-title-medium-size);
+	font-weight: var(--md-sys-typescale-title-medium-weight);
+	line-height: var(--md-sys-typescale-title-medium-line-height);
+	color: var(--md-sys-color-on-surface);
+}
+
+.feature-body {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	line-height: var(--md-sys-typescale-body-medium-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+@media (max-width: 599px) {
+	.hero {
+		padding: var(--md-sys-spacing-10) 0 var(--md-sys-spacing-8);
+	}
+
+	.hero-title {
+		font-size: var(--md-sys-typescale-headline-medium-size);
+		line-height: var(--md-sys-typescale-headline-medium-line-height);
+	}
+
+	.search-field {
+		flex-direction: column;
+	}
+
+	.search-examples {
+		flex-direction: column;
+	}
+}
+</style>

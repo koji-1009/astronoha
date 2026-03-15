@@ -1,0 +1,100 @@
+---
+/**
+ * 404 error page.
+ *
+ * CRZ Layer 1: static HTML, no JavaScript needed.
+ * Displayed when a requested page is not found.
+ */
+
+import { ui } from "@/i18n/ui";
+import BaseLayout from "@/shared/layout/BaseLayout.astro";
+---
+
+<BaseLayout
+	title={ui.error.notFoundTitle}
+	description={ui.error.notFoundDescription}
+>
+	<div class="error-page">
+		<div class="error-content">
+			<p class="error-code">404</p>
+			<h1 class="error-title">{ui.error.notFoundTitle}</h1>
+			<p class="error-description">{ui.error.notFoundDescription}</p>
+			<div class="error-actions">
+				<a href="/" class="action-link">{ui.nav.backToTop}</a>
+			</div>
+		</div>
+	</div>
+</BaseLayout>
+
+<style>
+.error-page {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: calc(100dvh - 300px);
+	text-align: center;
+}
+
+.error-content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--md-sys-spacing-4);
+	max-width: 480px;
+}
+
+.error-code {
+	font-size: var(--md-sys-typescale-display-large-size);
+	line-height: var(--md-sys-typescale-display-large-line-height);
+	font-weight: var(--md-sys-typescale-display-large-weight);
+	color: var(--md-sys-color-outline);
+}
+
+.error-title {
+	font-size: var(--md-sys-typescale-headline-medium-size);
+	line-height: var(--md-sys-typescale-headline-medium-line-height);
+	font-weight: var(--md-sys-typescale-headline-medium-weight);
+	color: var(--md-sys-color-on-surface);
+}
+
+.error-description {
+	font-size: var(--md-sys-typescale-body-large-size);
+	line-height: var(--md-sys-typescale-body-large-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.error-actions {
+	margin-top: var(--md-sys-spacing-4);
+}
+
+.action-link {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 40px;
+	padding: 0 var(--md-sys-spacing-6);
+	border-radius: var(--md-sys-shape-corner-full);
+	background: var(--md-sys-color-primary);
+	color: var(--md-sys-color-on-primary);
+	font-size: var(--md-sys-typescale-label-large-size);
+	font-weight: var(--md-sys-typescale-label-large-weight);
+	text-decoration: none;
+	transition: box-shadow 0.2s;
+}
+
+.action-link:hover {
+	box-shadow: var(--md-sys-elevation-1);
+}
+
+@media (max-width: 599px) {
+	.error-code {
+		font-size: var(--md-sys-typescale-display-medium-size);
+		line-height: var(--md-sys-typescale-display-medium-line-height);
+	}
+
+	.error-title {
+		font-size: var(--md-sys-typescale-headline-small-size);
+		line-height: var(--md-sys-typescale-headline-small-line-height);
+	}
+}
+</style>

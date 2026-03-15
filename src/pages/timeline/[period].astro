@@ -1,0 +1,275 @@
+---
+/**
+ * Timeline detail page — shows speeches and publications for a period.
+ *
+ * CRZ Layer 1-2: fully server-rendered timeline.
+ * Filter state is driven by URL query params (?filter=speeches|publications).
+ *
+ * The page requires a keyword query param to search (?q=keyword).
+ * Without it, a search form is shown.
+ */
+
+import TimelineScroll from "@/features/timeline/components/TimelineScroll.astro";
+import type { TimelineData } from "@/features/timeline/data/timeline";
+import { ui } from "@/i18n/ui";
+import Attribution from "@/shared/components/Attribution.astro";
+import BaseLayout from "@/shared/layout/BaseLayout.astro";
+
+const periodParam = Astro.params.period;
+if (!periodParam) {
+	return Astro.redirect("/timeline");
+}
+
+const keyword = Astro.url.searchParams.get("q")?.trim();
+
+// Read filter from URL query params (CRZ: filters belong in URL)
+const filterParam = Astro.url.searchParams.get("filter");
+const filter: "all" | "speeches" | "publications" =
+	filterParam === "speeches" || filterParam === "publications"
+		? filterParam
+		: "all";
+
+let timelineData: TimelineData | null = null;
+let errorMessage: string | null = null;
+const warnings: string[] = [];
+let periodLabel = periodParam;
+
+// Validate the period format
+try {
+	const { parsePeriod } = await import("@/features/timeline/data/timeline");
+	const parsed = parsePeriod(periodParam);
+	periodLabel = `${parsed.year}年${parsed.month}月`;
+} catch (error) {
+	errorMessage =
+		error instanceof Error ? error.message : ui.error.invalidPeriod;
+}
+
+// Fetch timeline data if keyword is provided
+if (keyword && !errorMessage) {
+	try {
+		const { getTimelineData } = await import(
+			"@/features/timeline/data/timeline"
+		);
+		timelineData = await getTimelineData(keyword, periodParam);
+		warnings.push(...timelineData.warnings);
+	} catch (error) {
+		errorMessage =
+			error instanceof Error ? error.message : ui.error.timelineFetchFailed;
+	}
+}
+---
+
+<BaseLayout
+	title={keyword
+		? `「${keyword}」のタイムライン（${periodLabel}）`
+		: `タイムライン（${periodLabel}）`}
+	description={keyword
+		? `${periodLabel}における「${keyword}」の議会発言と出版物のタイムライン`
+		: `${periodLabel}のタイムラインビュー`}
+>
+	<div class="timeline-detail">
+		<nav class="breadcrumb" aria-label={ui.nav.breadcrumb}>
+			<a href="/">{ui.nav.top}</a>
+			<span class="breadcrumb-separator" aria-hidden="true">/</span>
+			<a href="/timeline">{ui.nav.timeline}</a>
+			<span class="breadcrumb-separator" aria-hidden="true">/</span>
+			<span aria-current="page">{periodLabel}</span>
+		</nav>
+
+		<header class="page-header">
+			<h1 class="page-title">{ui.timeline.timelineOf(periodLabel)}</h1>
+			{keyword && (
+				<p class="page-keyword">
+					{ui.timeline.keyword(keyword)}
+				</p>
+			)}
+		</header>
+
+		<form method="GET" action={`/timeline/${periodParam}`} class="keyword-form">
+			<label for="timeline-keyword" class="visually-hidden"
+				>{ui.a11y.searchKeyword}</label
+			>
+			<div class="search-field">
+				<input
+					id="timeline-keyword"
+					type="text"
+					name="q"
+					class="outlined"
+					value={keyword ?? ""}
+					placeholder={ui.search.placeholder}
+					required
+				>
+				<button type="submit" class="filled">{ui.search.show}</button>
+			</div>
+		</form>
+
+		{errorMessage && (
+			<div class="error-container card">
+				<p class="error-title">{ui.error.label}</p>
+				<p class="error-message">{errorMessage}</p>
+			</div>
+		)}
+
+		{warnings.length > 0 && (
+			<div class="warning-container card">
+				{warnings.map((w) => (
+					<p class="warning-message">{w}</p>
+				))}
+			</div>
+		)}
+
+		{!keyword && !errorMessage && (
+			<div class="prompt-container">
+				<p class="prompt-message">
+					{ui.timeline.promptKeyword}
+				</p>
+			</div>
+		)}
+
+		{timelineData && (
+			<>
+				<div class="timeline-stats">
+					<div class="stat card">
+						<span class="stat-value">
+							{timelineData.totalSpeeches.toLocaleString()}
+						</span>
+						<span class="stat-label">{ui.timeline.speechCount}</span>
+					</div>
+					<div class="stat card">
+						<span class="stat-value">
+							{timelineData.totalPublications.toLocaleString()}
+						</span>
+						<span class="stat-label">{ui.timeline.publicationCount}</span>
+					</div>
+				</div>
+
+				{timelineData.entries.length === 0 && keyword && (
+					<div class="empty-container">
+						<p class="empty-message">
+							{ui.timeline.noResults(keyword)}
+						</p>
+					</div>
+				)}
+
+				{timelineData.entries.length > 0 && (
+					<section class="timeline-entries">
+						<TimelineScroll entries={timelineData.entries} keyword={keyword ?? ""} period={periodParam} filter={filter} />
+					</section>
+				)}
+
+				<footer class="page-footer">
+					<Attribution />
+				</footer>
+			</>
+		)}
+	</div>
+</BaseLayout>
+
+<style>
+.timeline-detail {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-6);
+}
+
+.breadcrumb {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--md-sys-spacing-1);
+	align-items: center;
+	font-size: var(--md-sys-typescale-label-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.breadcrumb a {
+	color: var(--md-sys-color-primary);
+	text-decoration: none;
+}
+
+.breadcrumb a:hover {
+	text-decoration: underline;
+}
+
+.breadcrumb-separator {
+	color: var(--md-sys-color-outline);
+}
+
+.page-header {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-2);
+}
+
+.page-title {
+	font-size: var(--md-sys-typescale-headline-medium-size);
+	line-height: var(--md-sys-typescale-headline-medium-line-height);
+	font-weight: var(--md-sys-typescale-headline-medium-weight);
+	color: var(--md-sys-color-on-surface);
+}
+
+.page-keyword {
+	font-size: var(--md-sys-typescale-body-large-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.keyword-form {
+	max-width: 480px;
+}
+
+.search-field {
+	display: flex;
+	gap: var(--md-sys-spacing-2);
+}
+
+.search-field input {
+	flex: 1;
+}
+
+.prompt-container {
+	text-align: center;
+	padding: var(--md-sys-spacing-12) 0;
+}
+
+.prompt-message {
+	font-size: var(--md-sys-typescale-body-large-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.timeline-stats {
+	display: flex;
+	gap: var(--md-sys-spacing-4);
+}
+
+.stat {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	flex: 1;
+}
+
+.stat-value {
+	font-size: var(--md-sys-typescale-headline-small-size);
+	font-weight: var(--md-sys-typescale-headline-small-weight);
+	color: var(--md-sys-color-primary);
+}
+
+.stat-label {
+	font-size: var(--md-sys-typescale-label-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+@media (max-width: 599px) {
+	.page-title {
+		font-size: var(--md-sys-typescale-headline-small-size);
+		line-height: var(--md-sys-typescale-headline-small-line-height);
+	}
+
+	.search-field {
+		flex-direction: column;
+	}
+
+	.timeline-stats {
+		flex-direction: column;
+	}
+}
+</style>

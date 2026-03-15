@@ -1,0 +1,222 @@
+---
+/**
+ * Base layout for all pages. Color tokens are defined in global.css.
+ * Color mode preference is read from cookie via inline script to avoid FOUC.
+ *
+ * Props:
+ *   title       — Page title (appended with " | astronoha")
+ *   description — Meta description
+ */
+
+import { ClientRouter } from "astro:transitions";
+import { ui } from "@/i18n/ui";
+import Attribution from "../components/Attribution.astro";
+import "@/styles/global.css";
+
+interface Props {
+	title: string;
+	description: string;
+}
+
+const { title, description } = Astro.props;
+
+// Canonical URL: normalize page=1 → remove page param (default)
+const canonicalUrl = new URL(Astro.url);
+if (canonicalUrl.searchParams.get("page") === "1") {
+	canonicalUrl.searchParams.delete("page");
+}
+---
+
+<html lang="ja">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>{title} | astronoha</title>
+		<meta name="description" content={description}>
+		<link rel="canonical" href={canonicalUrl.href}>
+		<ClientRouter />
+		<script is:inline>
+		(() => {
+			var c = null;
+			var s = null;
+			try {
+				c = document.cookie.match(/astronoha_settings=([^;]+)/);
+				if (c) {
+					s = JSON.parse(atob(c[1]));
+					if (s.colorMode === "light" || s.colorMode === "dark") {
+						document.documentElement.setAttribute(
+							"data-color-mode",
+							s.colorMode,
+						);
+					}
+				}
+			} catch (e) {}
+		})();
+		</script>
+	</head>
+	<body>
+		<a href="#main-content" class="skip-link">{ui.nav.skipToContent}</a>
+		<header class="site-header" transition:animate="none">
+			<nav class="site-nav">
+				<a href="/" class="site-logo">astronoha</a>
+				<ul class="nav-links">
+					<li><a href="/" class="nav-link">{ui.nav.search}</a></li>
+					<li><a href="/timeline" class="nav-link">{ui.nav.timeline}</a></li>
+					<li><a href="/settings" class="nav-link">{ui.nav.settings}</a></li>
+					<li><a href="/about" class="nav-link">{ui.nav.about}</a></li>
+				</ul>
+			</nav>
+		</header>
+		<main id="main-content" transition:animate="fade"><slot /></main>
+		<footer class="site-footer" transition:animate="none">
+			<Attribution />
+		</footer>
+		<div class="nav-progress" aria-hidden="true"></div>
+		<script>
+		document.addEventListener("astro:before-preparation", () => {
+			document.querySelector(".nav-progress")?.classList.add("loading");
+		});
+		document.addEventListener("astro:after-swap", () => {
+			document.querySelector(".nav-progress")?.classList.remove("loading");
+		});
+		</script>
+	</body>
+</html>
+
+<style>
+.skip-link {
+	position: absolute;
+	top: -100%;
+	left: var(--md-sys-spacing-4);
+	z-index: 200;
+	padding: var(--md-sys-spacing-2) var(--md-sys-spacing-4);
+	background: var(--md-sys-color-primary);
+	color: var(--md-sys-color-on-primary);
+	border-radius: var(--md-sys-shape-corner-small);
+	text-decoration: none;
+	font-size: var(--md-sys-typescale-label-large-size);
+}
+
+.skip-link:focus {
+	top: var(--md-sys-spacing-2);
+}
+
+.site-header {
+	background: var(--md-sys-color-surface);
+	border-bottom: 1px solid var(--md-sys-color-outline-variant);
+	position: sticky;
+	top: 0;
+	z-index: 10;
+}
+
+.site-nav {
+	display: flex;
+	align-items: center;
+	gap: var(--md-sys-spacing-6);
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: var(--md-sys-spacing-3) var(--md-sys-spacing-4);
+}
+
+.site-logo {
+	font-family: var(--md-sys-typescale-title-large-font);
+	font-size: var(--md-sys-typescale-title-large-size);
+	font-weight: var(--md-sys-typescale-title-large-weight);
+	line-height: var(--md-sys-typescale-title-large-line-height);
+	color: var(--md-sys-color-primary);
+	text-decoration: none;
+	flex-shrink: 0;
+}
+
+.nav-links {
+	display: flex;
+	align-items: center;
+	gap: var(--md-sys-spacing-1);
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	flex-wrap: wrap;
+}
+
+.nav-link {
+	display: inline-flex;
+	align-items: center;
+	padding: var(--md-sys-spacing-2) var(--md-sys-spacing-3);
+	border-radius: var(--md-sys-shape-corner-full);
+	font-size: var(--md-sys-typescale-label-large-size);
+	font-weight: var(--md-sys-typescale-label-large-weight);
+	line-height: var(--md-sys-typescale-label-large-line-height);
+	letter-spacing: var(--md-sys-typescale-label-large-tracking);
+	color: var(--md-sys-color-on-surface-variant);
+	text-decoration: none;
+	transition: background-color 0.2s;
+}
+
+.nav-link:hover {
+	background: color-mix(
+		in srgb,
+		var(--md-sys-color-on-surface) 8%,
+		transparent
+	);
+}
+
+main {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: var(--md-sys-spacing-6) var(--md-sys-spacing-4);
+	min-height: calc(100dvh - 160px);
+}
+
+.site-footer {
+	border-top: 1px solid var(--md-sys-color-outline-variant);
+	padding: var(--md-sys-spacing-6) var(--md-sys-spacing-4);
+	text-align: center;
+}
+
+.nav-progress {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 0;
+	height: 3px;
+	background: var(--md-sys-color-primary);
+	z-index: 100;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.2s;
+}
+
+.nav-progress.loading {
+	opacity: 1;
+	animation: nav-progress-grow 8s cubic-bezier(0.1, 0.5, 0.3, 1) forwards;
+}
+
+@keyframes nav-progress-grow {
+	0% {
+		width: 0;
+	}
+	20% {
+		width: 40%;
+	}
+	50% {
+		width: 65%;
+	}
+	80% {
+		width: 85%;
+	}
+	100% {
+		width: 95%;
+	}
+}
+
+@media (max-width: 599px) {
+	.site-nav {
+		flex-direction: column;
+		gap: var(--md-sys-spacing-2);
+	}
+
+	.nav-links {
+		justify-content: center;
+	}
+}
+</style>

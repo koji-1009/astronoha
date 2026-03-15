@@ -1,0 +1,9 @@
+# Astro Cloudflare adapter auto-generates most config in dist/server/wrangler.json.
+# This file provides bindings that the adapter doesn't manage.
+
+[[d1_databases]]
+binding = "HEATMAP_DB"
+database_name = "astronoha-heatmap"
+# database_id is set in Cloudflare dashboard after `wrangler d1 create astronoha-heatmap`
+# For local dev, wrangler uses a local SQLite file automatically.
+migrations_dir = "migrations"

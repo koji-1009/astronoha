@@ -1,0 +1,34 @@
+---
+/**
+ * Server Island: related books carousel for speech detail page.
+ *
+ * Deferred via server:defer to avoid blocking speech text display
+ * with the sequential NDL Search API call.
+ */
+
+import { getThumbnailUrl } from "@/features/search/data/ndl-thumbnail";
+import BookCarousel from "./BookCarousel.astro";
+
+interface Props {
+	keyword: string;
+}
+
+const { keyword } = Astro.props;
+
+const { searchBooks } = await import("@/features/search/data/ndl-search");
+const relatedBooks = await searchBooks(keyword, { count: 10 });
+
+const carouselBooks = (relatedBooks?.items ?? [])
+	.filter((book) => book.identifier)
+	.map((book) => ({
+		title: book.title,
+		link: book.link,
+		author: book.author ?? "",
+		publisher: book.publisher ?? "",
+		date: book.date ?? "",
+		identifier: book.identifier ?? "",
+		thumbnailUrl: getThumbnailUrl(book.identifier ?? ""),
+	}));
+---
+
+<BookCarousel books={carouselBooks} />

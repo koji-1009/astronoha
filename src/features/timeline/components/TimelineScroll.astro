@@ -1,0 +1,309 @@
+---
+/**
+ * TimelineScroll — Vertical timeline of speeches and publications.
+ *
+ * CRZ Layer 1-2: Pure server-rendered. Filter state comes from URL query params.
+ * No client-side JavaScript required.
+ */
+
+import { ui } from "@/i18n/ui";
+import { formatDate } from "@/shared/lib/format";
+import type { TimelineEntry } from "../data/timeline";
+
+interface Props {
+	entries: Array<TimelineEntry>;
+	keyword: string;
+	period: string;
+	filter: "all" | "speeches" | "publications";
+}
+
+const { entries, keyword, period, filter } = Astro.props;
+
+const totalCount = entries.length;
+
+const filteredEntries = entries.filter((entry) => {
+	if (filter === "speeches") return entry.type === "speech";
+	if (filter === "publications") return entry.type === "publication";
+	return true;
+});
+
+const sortedEntries = [...filteredEntries].sort((a, b) =>
+	a.date.localeCompare(b.date),
+);
+
+const speechCount = entries.filter((e) => e.type === "speech").length;
+const publicationCount = entries.filter((e) => e.type === "publication").length;
+
+/**
+ * Build filter URL preserving the existing `q` query param.
+ */
+function filterHref(target: "all" | "speeches" | "publications"): string {
+	const base = `/timeline/${period}`;
+	const params = new URLSearchParams();
+	if (keyword) params.set("q", keyword);
+	if (target !== "all") params.set("filter", target);
+	const qs = params.toString();
+	return qs ? `${base}?${qs}` : base;
+}
+---
+
+{entries.length === 0 ? (
+	<p class="empty-message">{ui.timeline.noData}</p>
+) : (
+	<div class="timeline-scroll">
+		{/* Header */}
+		<div class="timeline-header">
+			<h3 class="timeline-title">{ui.timeline.title}: {period}</h3>
+			{/* Filter links */}
+			<div class="filter-links">
+				<a
+					href={filterHref("all")}
+					class:list={["filter-link", { "filter-link--active": filter === "all" }]}
+				>
+					{ui.timeline.filterAll(totalCount)}
+				</a>
+				<a
+					href={filterHref("speeches")}
+					class:list={["filter-link", { "filter-link--active": filter === "speeches" }]}
+				>
+					<span class="filter-dot filter-dot--speech" />
+					{ui.timeline.filterSpeeches(speechCount)}
+				</a>
+				<a
+					href={filterHref("publications")}
+					class:list={["filter-link", { "filter-link--active": filter === "publications" }]}
+				>
+					<span class="filter-dot filter-dot--publication" />
+					{ui.timeline.filterPublications(publicationCount)}
+				</a>
+			</div>
+		</div>
+
+		{/* Timeline */}
+		<div class="timeline-container">
+			{/* Vertical line */}
+			<div class="timeline-line" />
+
+			{sortedEntries.map((entry) => {
+				const isSpeech = entry.type === "speech";
+				const href = isSpeech
+					? `/word/${encodeURIComponent(keyword)}/${entry.speechId}`
+					: entry.link;
+
+				return (
+					<div class="timeline-entry">
+						{/* Dot on the timeline */}
+						<div class:list={["timeline-dot", isSpeech ? "timeline-dot--speech" : "timeline-dot--publication"]} />
+
+						{/* Entry card */}
+						<a
+							href={href}
+							{...(isSpeech ? {} : { target: "_blank", rel: "noopener noreferrer" })}
+							class="entry-card-link"
+						>
+							<div class:list={["card", "entry-card", isSpeech ? "entry-card--speech" : "entry-card--publication"]}>
+								{/* Date */}
+								<p class="entry-date">
+									{formatDate(entry.date)}
+									{isSpeech ? ` - ${ui.timeline.typeSpeech}` : ` - ${ui.timeline.typePublication}`}
+								</p>
+
+								{/* Title */}
+								<p class="entry-title">{entry.title}</p>
+
+								{/* Metadata */}
+								{isSpeech && entry.speaker && (
+									<p class="entry-meta">
+										{entry.speaker}
+										{entry.house ? ` (${entry.house})` : ""}
+									</p>
+								)}
+								{!isSpeech && entry.author && (
+									<p class="entry-meta">{entry.author}</p>
+								)}
+								{!isSpeech && (
+									<p class="entry-external-hint">{ui.timeline.viewOnNdlSearch} ↗</p>
+								)}
+							</div>
+						</a>
+					</div>
+				);
+			})}
+		</div>
+
+		{/* Summary */}
+		<p class="timeline-summary">
+			{ui.timeline.displayCount(filteredEntries.length, totalCount)}
+		</p>
+	</div>
+)}
+
+<style>
+.empty-message {
+	color: var(--md-sys-color-on-surface-variant);
+	font-size: var(--md-sys-typescale-body-medium-size);
+	line-height: var(--md-sys-typescale-body-medium-line-height);
+}
+
+.timeline-scroll {
+	display: flex;
+	flex-direction: column;
+}
+
+.timeline-header {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: center;
+	gap: var(--md-sys-spacing-3);
+	margin-bottom: var(--md-sys-spacing-4);
+}
+
+.timeline-title {
+	font-size: var(--md-sys-typescale-title-medium-size);
+	font-weight: var(--md-sys-typescale-title-medium-weight);
+	line-height: var(--md-sys-typescale-title-medium-line-height);
+	color: var(--md-sys-color-on-surface);
+}
+
+.filter-links {
+	display: flex;
+	gap: var(--md-sys-spacing-2);
+}
+
+.filter-link {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--md-sys-spacing-1);
+	padding: var(--md-sys-spacing-1) var(--md-sys-spacing-3);
+	border-radius: var(--md-sys-shape-corner-small);
+	font-size: var(--md-sys-typescale-label-large-size);
+	font-weight: var(--md-sys-typescale-label-large-weight);
+	line-height: var(--md-sys-typescale-label-large-line-height);
+	text-decoration: none;
+	color: var(--md-sys-color-on-surface-variant);
+	background: transparent;
+	border: 1px solid var(--md-sys-color-outline);
+	transition:
+		background-color 0.2s,
+		color 0.2s;
+}
+
+.filter-link:hover {
+	background: var(--md-sys-color-surface-container-high);
+}
+
+.filter-link--active {
+	background: var(--md-sys-color-secondary-container);
+	color: var(--md-sys-color-on-secondary-container);
+	border-color: transparent;
+}
+
+.filter-dot {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	border-radius: var(--md-sys-shape-corner-full);
+}
+
+.filter-dot--speech {
+	background-color: var(--md-sys-color-primary);
+}
+
+.filter-dot--publication {
+	background-color: var(--md-sys-color-tertiary);
+}
+
+.timeline-container {
+	position: relative;
+	padding-left: var(--md-sys-spacing-8);
+	max-height: 600px;
+	overflow-y: auto;
+}
+
+.timeline-line {
+	position: absolute;
+	left: var(--md-sys-spacing-3);
+	top: 0;
+	bottom: 0;
+	width: 2px;
+	background-color: var(--md-sys-color-outline-variant);
+}
+
+.timeline-entry {
+	position: relative;
+	margin-bottom: var(--md-sys-spacing-4);
+}
+
+.timeline-dot {
+	position: absolute;
+	left: calc(-1 * var(--md-sys-spacing-8) + 8px);
+	top: var(--md-sys-spacing-2);
+	width: 10px;
+	height: 10px;
+	border-radius: var(--md-sys-shape-corner-full);
+	border: 2px solid var(--md-sys-color-surface);
+	z-index: 1;
+}
+
+.timeline-dot--speech {
+	background-color: var(--md-sys-color-primary);
+}
+
+.timeline-dot--publication {
+	background-color: var(--md-sys-color-tertiary);
+}
+
+.entry-card-link {
+	display: block;
+	text-decoration: none;
+	color: inherit;
+}
+
+.entry-card {
+	transition: box-shadow 0.2s;
+}
+
+.entry-card--speech {
+	border-left: 3px solid var(--md-sys-color-primary);
+}
+
+.entry-card--publication {
+	border-left: 3px solid var(--md-sys-color-tertiary);
+}
+
+.entry-date {
+	font-size: var(--md-sys-typescale-label-medium-size);
+	font-weight: var(--md-sys-typescale-label-medium-weight);
+	line-height: var(--md-sys-typescale-label-medium-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+	margin-bottom: var(--md-sys-spacing-1);
+}
+
+.entry-title {
+	font-size: var(--md-sys-typescale-body-large-size);
+	line-height: var(--md-sys-typescale-body-large-line-height);
+	color: var(--md-sys-color-on-surface);
+	margin-bottom: var(--md-sys-spacing-1);
+}
+
+.entry-meta {
+	font-size: var(--md-sys-typescale-body-small-size);
+	line-height: var(--md-sys-typescale-body-small-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.entry-external-hint {
+	font-size: var(--md-sys-typescale-label-small-size);
+	font-weight: var(--md-sys-typescale-label-small-weight);
+	color: var(--md-sys-color-tertiary);
+	margin-top: var(--md-sys-spacing-1);
+}
+
+.timeline-summary {
+	margin-top: var(--md-sys-spacing-3);
+	font-size: var(--md-sys-typescale-body-small-size);
+	line-height: var(--md-sys-typescale-body-small-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+}
+</style>

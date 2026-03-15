@@ -1,0 +1,327 @@
+---
+/**
+ * Individual speech detail page.
+ *
+ * CRZ Layer 1-2: full speech text and BookCarousel rendered as HTML.
+ * LlmPanel (Layer 4) is a lazy-loaded island.
+ */
+
+import DeferredBookCarousel from "@/features/search/components/DeferredBookCarousel.astro";
+import LlmPanel from "@/features/search/components/LlmPanel";
+import type { SpeechRecord } from "@/features/search/data/schemas";
+import { ui } from "@/i18n/ui";
+import Attribution from "@/shared/components/Attribution.astro";
+import BaseLayout from "@/shared/layout/BaseLayout.astro";
+import { formatDate } from "@/shared/lib/format";
+
+const { keyword, speechId } = Astro.params;
+if (!keyword || !speechId) {
+	return Astro.redirect("/");
+}
+
+const decodedKeyword = decodeURIComponent(keyword);
+const decodedSpeechId = decodeURIComponent(speechId);
+
+let speech: SpeechRecord | null = null;
+let errorMessage: string | null = null;
+let lastError: unknown = null;
+
+try {
+	const { getSpeechById } = await import("@/features/search/data/kokkai");
+	const result = await getSpeechById(decodedSpeechId);
+	if (result.speechRecord && result.speechRecord.length > 0) {
+		speech = result.speechRecord[0];
+	}
+} catch (error) {
+	lastError = error;
+}
+
+if (!speech) {
+	try {
+		const { getSpeechById: getTeikokuSpeechById } = await import(
+			"@/features/search/data/teikoku"
+		);
+		const result = await getTeikokuSpeechById(decodedSpeechId);
+		if (result.speechRecord && result.speechRecord.length > 0) {
+			speech = result.speechRecord[0];
+		}
+	} catch (error) {
+		lastError = error;
+	}
+}
+
+if (!speech) {
+	errorMessage =
+		lastError instanceof Error
+			? ui.error.speechRetrieveFailed(lastError.message)
+			: ui.error.speechNotFound;
+}
+
+// Extract year from speech date for LlmPanel context
+const speechYear = speech?.date
+	? Number.parseInt(speech.date.split("-")[0], 10)
+	: undefined;
+
+/**
+ * Split speech text into paragraphs for better readability.
+ */
+function splitParagraphs(text: string): string[] {
+	return text
+		.split(/\n+/)
+		.map((p) => p.trim())
+		.filter((p) => p.length > 0);
+}
+---
+
+<BaseLayout
+	title={speech
+		? `${speech.speaker ?? "不明"}の発言 — 「${decodedKeyword}」`
+		: `${ui.search.speechDetail} — 「${decodedKeyword}」`}
+	description={speech
+		? `${speech.speaker ?? "不明"}による${speech.nameOfMeeting}での発言（${formatDate(speech.date)}）`
+		: "発言詳細ページ"}
+>
+	<div class="speech-detail">
+		<nav class="breadcrumb" aria-label={ui.nav.breadcrumb}>
+			<a href="/">{ui.nav.top}</a>
+			<span class="breadcrumb-separator" aria-hidden="true">/</span>
+			<a href={`/word/${encodeURIComponent(decodedKeyword)}`}>
+				{ui.search.resultsTitle(decodedKeyword)}
+			</a>
+			<span class="breadcrumb-separator" aria-hidden="true">/</span>
+			<span aria-current="page">{ui.search.speechDetail}</span>
+		</nav>
+
+		{errorMessage && (
+			<div class="error-container card">
+				<p class="error-title">{ui.error.label}</p>
+				<p class="error-message">{errorMessage}</p>
+				<a href={`/word/${encodeURIComponent(decodedKeyword)}`} class="back-link">
+					{ui.nav.backToResults}
+				</a>
+			</div>
+		)}
+
+		{speech && (
+			<article class="speech-article">
+				<header class="speech-header">
+					<div class="speech-meta">
+						<span class="speech-house">{speech.nameOfHouse}</span>
+						<span class="speech-meeting">
+							{speech.nameOfMeeting} {speech.issue}
+						</span>
+					</div>
+					<time class="speech-date" datetime={speech.date ?? ""}>
+						{formatDate(speech.date)}
+					</time>
+					<h1 class="speech-speaker-name">
+						<a
+							href={`/speaker/${encodeURIComponent(speech.speaker ?? "")}`}
+							class="speaker-link"
+						>
+							{speech.speaker ?? "不明"}
+						</a>
+						{speech.speakerGroup && (
+							<span class="speaker-group">（{speech.speakerGroup}）</span>
+						)}
+						{speech.speakerPosition && (
+							<span class="speaker-position">{speech.speakerPosition}</span>
+						)}
+					</h1>
+				</header>
+
+				<div class="speech-body">
+					{splitParagraphs(speech.speech).map((paragraph) => (
+						<p>{paragraph}</p>
+					))}
+				</div>
+
+				<footer class="speech-footer">
+					<a
+						href={speech.speechURL}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="source-link"
+					>
+						{ui.search.viewOnNdl}
+					</a>
+					<a
+						href={speech.meetingURL}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="source-link"
+					>
+						{ui.search.viewMeeting}
+					</a>
+				</footer>
+			</article>
+		)}
+
+		<section class="related-books">
+			<DeferredBookCarousel server:defer keyword={decodedKeyword}>
+				<div slot="fallback" class="books-fallback">
+					<h3 class="book-carousel-heading">{ui.bookCarousel.title}</h3>
+					<p class="books-loading">{ui.bookCarousel.loading}</p>
+				</div>
+			</DeferredBookCarousel>
+		</section>
+
+		{speech && (
+			<section class="llm-section">
+				<LlmPanel client:idle speechText={speech.speech} keyword={decodedKeyword} year={speechYear} />
+			</section>
+		)}
+
+		<footer class="page-footer"><Attribution /></footer>
+	</div>
+</BaseLayout>
+
+<style>
+.speech-detail {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-6);
+}
+
+.breadcrumb {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--md-sys-spacing-1);
+	align-items: center;
+	font-size: var(--md-sys-typescale-label-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.breadcrumb a {
+	color: var(--md-sys-color-primary);
+	text-decoration: none;
+}
+
+.breadcrumb a:hover {
+	text-decoration: underline;
+}
+
+.breadcrumb-separator {
+	color: var(--md-sys-color-outline);
+}
+
+.back-link {
+	color: var(--md-sys-color-on-error-container);
+	text-decoration: underline;
+}
+
+.speech-article {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-6);
+}
+
+.speech-header {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-2);
+}
+
+.speech-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--md-sys-spacing-2);
+	align-items: center;
+}
+
+.speech-house {
+	display: inline-block;
+	padding: var(--md-sys-spacing-0) var(--md-sys-spacing-2);
+	background: var(--md-sys-color-tertiary-container);
+	color: var(--md-sys-color-on-tertiary-container);
+	border-radius: var(--md-sys-shape-corner-extra-small);
+	font-size: var(--md-sys-typescale-label-small-size);
+	font-weight: var(--md-sys-typescale-label-small-weight);
+}
+
+.speech-meeting {
+	font-size: var(--md-sys-typescale-label-large-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.speech-date {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.speech-speaker-name {
+	font-size: var(--md-sys-typescale-headline-medium-size);
+	line-height: var(--md-sys-typescale-headline-medium-line-height);
+	font-weight: var(--md-sys-typescale-headline-medium-weight);
+	color: var(--md-sys-color-on-surface);
+}
+
+.speaker-link {
+	color: var(--md-sys-color-primary);
+	text-decoration: none;
+}
+
+.speaker-link:hover {
+	text-decoration: underline;
+}
+
+.speaker-group,
+.speaker-position {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	font-weight: 400;
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.speech-body {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-4);
+	font-size: var(--md-sys-typescale-body-large-size);
+	line-height: var(--md-sys-typescale-body-large-line-height);
+	letter-spacing: var(--md-sys-typescale-body-large-tracking);
+	color: var(--md-sys-color-on-surface);
+}
+
+.speech-footer {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--md-sys-spacing-4);
+	padding-top: var(--md-sys-spacing-4);
+	border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.source-link {
+	font-size: var(--md-sys-typescale-label-large-size);
+	font-weight: var(--md-sys-typescale-label-large-weight);
+	color: var(--md-sys-color-primary);
+	text-decoration: none;
+}
+
+.source-link:hover {
+	text-decoration: underline;
+}
+
+.related-books {
+	margin-top: var(--md-sys-spacing-4);
+}
+
+.books-fallback .book-carousel-heading {
+	font-size: var(--md-sys-typescale-title-medium-size);
+	font-weight: var(--md-sys-typescale-title-medium-weight);
+	line-height: var(--md-sys-typescale-title-medium-line-height);
+	color: var(--md-sys-color-on-surface);
+	margin-bottom: var(--md-sys-spacing-3);
+}
+
+.books-loading {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+@media (max-width: 599px) {
+	.speech-speaker-name {
+		font-size: var(--md-sys-typescale-headline-small-size);
+		line-height: var(--md-sys-typescale-headline-small-line-height);
+	}
+}
+</style>

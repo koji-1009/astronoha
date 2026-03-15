@@ -1,0 +1,149 @@
+---
+/**
+ * Heatmap — year-based frequency visualization for search results.
+ *
+ * CRZ Layer 1-2: pure server-rendered HTML + CSS tooltip.
+ * No client-side state needed.
+ */
+
+import { ui } from "@/i18n/ui";
+
+interface Props {
+	data: Array<{ year: number; count: number }>;
+	keyword: string;
+}
+
+const { data, keyword } = Astro.props;
+
+const hasData = data.length > 0;
+
+const maxCount = hasData ? Math.max(...data.map((d) => d.count)) : 0;
+const minYear = hasData ? Math.min(...data.map((d) => d.year)) : 0;
+const maxYear = hasData ? Math.max(...data.map((d) => d.year)) : 0;
+
+// Build a map for quick lookup
+const countByYear = new Map<number, number>();
+for (const d of data) {
+	countByYear.set(d.year, d.count);
+}
+
+// Generate all years in range
+const years: number[] = [];
+if (hasData) {
+	for (let y = minYear; y <= maxYear; y++) {
+		years.push(y);
+	}
+}
+
+function getOpacity(count: number): number {
+	if (maxCount === 0) return 0;
+	return count === 0 ? 0.05 : 0.1 + (count / maxCount) * 0.9;
+}
+---
+
+{!hasData && (
+	<p class="heatmap-empty">{ui.heatmap.noData}</p>
+)}
+
+{hasData && (
+	<div class="heatmap">
+		<h3 class="heatmap-title">{ui.heatmap.title}</h3>
+		<div class="heatmap-grid">
+			{years.map((year) => {
+				const count = countByYear.get(year) ?? 0;
+				const opacity = getOpacity(count);
+				return (
+					<a
+						href={`/word/${encodeURIComponent(keyword)}?from=${year}-01-01&until=${year}-12-31`}
+						class="heatmap-cell"
+						style={`opacity: ${opacity};`}
+						data-tooltip={`${year}年: ${count}件`}
+					>
+						<span class="visually-hidden">{year}年: {count}件</span>
+					</a>
+				);
+			})}
+		</div>
+		<div class="heatmap-range">
+			<span>{minYear}</span>
+			<span>{maxYear}</span>
+		</div>
+	</div>
+)}
+
+<style>
+.heatmap-empty {
+	color: var(--md-sys-color-on-surface-variant);
+	font-size: var(--md-sys-typescale-body-medium-size);
+	line-height: var(--md-sys-typescale-body-medium-line-height);
+}
+
+.heatmap {
+	position: relative;
+}
+
+.heatmap-title {
+	font-size: var(--md-sys-typescale-title-medium-size);
+	font-weight: var(--md-sys-typescale-title-medium-weight);
+	line-height: var(--md-sys-typescale-title-medium-line-height);
+	color: var(--md-sys-color-on-surface);
+	margin-bottom: var(--md-sys-spacing-3);
+}
+
+.heatmap-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--md-sys-spacing-1);
+}
+
+.heatmap-cell {
+	position: relative;
+	display: block;
+	width: 24px;
+	height: 24px;
+	border-radius: var(--md-sys-shape-corner-extra-small);
+	background-color: var(--md-sys-color-primary);
+	text-decoration: none;
+	transition:
+		transform 0.15s,
+		box-shadow 0.15s;
+}
+
+.heatmap-cell:hover,
+.heatmap-cell:focus {
+	transform: scale(1.2);
+	box-shadow: var(--md-sys-elevation-2);
+	z-index: 1;
+}
+
+.heatmap-cell::after {
+	content: attr(data-tooltip);
+	position: absolute;
+	bottom: calc(100% + 6px);
+	left: 50%;
+	transform: translateX(-50%);
+	padding: var(--md-sys-spacing-1) var(--md-sys-spacing-2);
+	background: var(--md-sys-color-inverse-surface);
+	color: var(--md-sys-color-inverse-on-surface);
+	font-size: var(--md-sys-typescale-label-small-size);
+	line-height: var(--md-sys-typescale-label-small-line-height);
+	white-space: nowrap;
+	border-radius: var(--md-sys-shape-corner-extra-small);
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.15s;
+}
+
+.heatmap-cell:hover::after,
+.heatmap-cell:focus::after {
+	opacity: 1;
+}
+
+.heatmap-range {
+	display: flex;
+	justify-content: space-between;
+	margin-top: var(--md-sys-spacing-2);
+	font-size: var(--md-sys-typescale-label-small-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+</style>

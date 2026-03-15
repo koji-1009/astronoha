@@ -1,0 +1,357 @@
+---
+/**
+ * Speaker profile page.
+ *
+ * CRZ Layer 1-2: profile info, speech list, keyword cloud as HTML.
+ */
+
+import KeywordCloud from "@/features/speaker/components/KeywordCloud.astro";
+import type { SpeakerProfile } from "@/features/speaker/data/speaker";
+import { ui } from "@/i18n/ui";
+import Attribution from "@/shared/components/Attribution.astro";
+import BaseLayout from "@/shared/layout/BaseLayout.astro";
+import { formatDate, truncateSpeech } from "@/shared/lib/format";
+
+const nameParam = Astro.params.name;
+if (!nameParam) {
+	return Astro.redirect("/");
+}
+
+const decodedName = decodeURIComponent(nameParam);
+
+let profile: SpeakerProfile | null = null;
+let errorMessage: string | null = null;
+
+try {
+	const { searchSpeaker } = await import("@/features/speaker/data/speaker");
+	profile = await searchSpeaker(decodedName);
+} catch (error) {
+	errorMessage =
+		error instanceof Error ? error.message : ui.error.speakerFetchFailed;
+}
+
+// Fetch related books (sequential after speaker search)
+let relatedBooks: Awaited<
+	ReturnType<typeof import("@/features/speaker/data/speaker").getRelatedBooks>
+> = [];
+if (profile && !errorMessage) {
+	try {
+		const { getRelatedBooks } = await import("@/features/speaker/data/speaker");
+		relatedBooks = await getRelatedBooks(decodedName);
+	} catch {
+		// Non-critical failure
+	}
+}
+---
+
+<BaseLayout
+	title={`${decodedName}の発言者プロファイル`}
+	description={`${decodedName}の国会・帝国議会における発言一覧と頻出キーワード`}
+>
+	<div class="speaker-page">
+		<nav class="breadcrumb" aria-label={ui.nav.breadcrumb}>
+			<a href="/">{ui.nav.top}</a>
+			<span class="breadcrumb-separator" aria-hidden="true">/</span>
+			<span aria-current="page">{decodedName}</span>
+		</nav>
+
+		{errorMessage && (
+			<div class="error-container card">
+				<p class="error-title">{ui.error.label}</p>
+				<p class="error-message">{errorMessage}</p>
+			</div>
+		)}
+
+		{profile && (
+			<>
+				<header class="profile-header">
+					<h1 class="profile-name">{profile.name}</h1>
+					<div class="profile-stats">
+						<div class="stat">
+							<span class="stat-value">
+								{profile.totalSpeeches.toLocaleString()}
+							</span>
+							<span class="stat-label">{ui.speaker.speechCount}</span>
+						</div>
+						{profile.kokkaiSpeeches > 0 && (
+							<div class="stat">
+								<span class="stat-value">
+									{profile.kokkaiSpeeches.toLocaleString()}
+								</span>
+								<span class="stat-label">{ui.speaker.kokkai}</span>
+							</div>
+						)}
+						{profile.teikokuSpeeches > 0 && (
+							<div class="stat">
+								<span class="stat-value">
+									{profile.teikokuSpeeches.toLocaleString()}
+								</span>
+								<span class="stat-label">{ui.speaker.teikoku}</span>
+							</div>
+						)}
+					</div>
+				</header>
+
+				{profile.keywords.length > 0 && (
+					<section class="keywords-section">
+						<KeywordCloud keywords={profile.keywords} speakerName={profile.name} />
+					</section>
+				)}
+
+				{profile.totalSpeeches === 0 && (
+					<div class="empty-container">
+						<p class="empty-message">
+							{ui.speaker.noResults(decodedName)}
+						</p>
+					</div>
+				)}
+
+				{profile.speeches.length > 0 && (
+					<section class="speeches-section">
+						<h2 class="section-title">{ui.search.speechList}</h2>
+						<ul class="speech-list">
+							{profile.speeches.map((speech) => (
+								<li>
+									<a
+										href={`/word/${encodeURIComponent(decodedName)}/${encodeURIComponent(speech.speechID)}`}
+										class="card speech-card"
+									>
+										<div class="speech-meta">
+											<span class="speech-house">{speech.nameOfHouse}</span>
+											<span class="speech-meeting">
+												{speech.nameOfMeeting} {speech.issue}
+											</span>
+											<time class="speech-date" datetime={speech.date ?? ""}>
+												{formatDate(speech.date)}
+											</time>
+										</div>
+										<p class="speech-excerpt">
+											{truncateSpeech(speech.speech)}
+										</p>
+									</a>
+								</li>
+							))}
+						</ul>
+					</section>
+				)}
+
+				{relatedBooks.length > 0 && (
+					<section class="books-section">
+						<h2 class="section-title">{ui.search.relatedBooks}</h2>
+						<ul class="book-list">
+							{relatedBooks.map((book) => (
+								<li class="card book-card">
+									<a
+										href={book.link}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="book-link"
+									>
+										<p class="book-title">{book.title}</p>
+										{book.author && (
+											<p class="book-author">{book.author}</p>
+										)}
+										{book.publisher && (
+											<p class="book-publisher">{book.publisher}</p>
+										)}
+										{book.date && (
+											<p class="book-date">{book.date}</p>
+										)}
+									</a>
+								</li>
+							))}
+						</ul>
+					</section>
+				)}
+
+				<footer class="page-footer">
+					<Attribution />
+				</footer>
+			</>
+		)}
+	</div>
+</BaseLayout>
+
+<style>
+.speaker-page {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-6);
+}
+
+.breadcrumb {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--md-sys-spacing-1);
+	align-items: center;
+	font-size: var(--md-sys-typescale-label-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.breadcrumb a {
+	color: var(--md-sys-color-primary);
+	text-decoration: none;
+}
+
+.breadcrumb a:hover {
+	text-decoration: underline;
+}
+
+.breadcrumb-separator {
+	color: var(--md-sys-color-outline);
+}
+
+.profile-header {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-4);
+}
+
+.profile-name {
+	font-size: var(--md-sys-typescale-headline-large-size);
+	line-height: var(--md-sys-typescale-headline-large-line-height);
+	font-weight: var(--md-sys-typescale-headline-large-weight);
+	color: var(--md-sys-color-on-surface);
+}
+
+.profile-stats {
+	display: flex;
+	gap: var(--md-sys-spacing-6);
+}
+
+.stat {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.stat-value {
+	font-size: var(--md-sys-typescale-headline-small-size);
+	font-weight: var(--md-sys-typescale-headline-small-weight);
+	color: var(--md-sys-color-primary);
+}
+
+.stat-label {
+	font-size: var(--md-sys-typescale-label-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.speech-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-3);
+	list-style: none;
+	padding: 0;
+}
+
+.speech-card {
+	display: block;
+	text-decoration: none;
+	color: inherit;
+	transition:
+		box-shadow 0.2s,
+		background-color 0.2s;
+}
+
+.speech-card:hover {
+	box-shadow: var(--md-sys-elevation-2);
+	background: var(--md-sys-color-surface-container);
+}
+
+.speech-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--md-sys-spacing-2);
+	align-items: center;
+	margin-bottom: var(--md-sys-spacing-2);
+}
+
+.speech-house {
+	display: inline-block;
+	padding: var(--md-sys-spacing-0) var(--md-sys-spacing-2);
+	background: var(--md-sys-color-tertiary-container);
+	color: var(--md-sys-color-on-tertiary-container);
+	border-radius: var(--md-sys-shape-corner-extra-small);
+	font-size: var(--md-sys-typescale-label-small-size);
+	font-weight: var(--md-sys-typescale-label-small-weight);
+}
+
+.speech-meeting {
+	font-size: var(--md-sys-typescale-label-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.speech-date {
+	font-size: var(--md-sys-typescale-label-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+	margin-left: auto;
+}
+
+.speech-excerpt {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	line-height: var(--md-sys-typescale-body-medium-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.books-section {
+	margin-top: var(--md-sys-spacing-4);
+}
+
+.book-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: var(--md-sys-spacing-3);
+	list-style: none;
+	padding: 0;
+}
+
+.book-card {
+	display: flex;
+}
+
+.book-link {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-1);
+	text-decoration: none;
+	color: inherit;
+	width: 100%;
+}
+
+.book-link:hover {
+	text-decoration: underline;
+}
+
+.book-title {
+	font-size: var(--md-sys-typescale-title-small-size);
+	font-weight: var(--md-sys-typescale-title-small-weight);
+	color: var(--md-sys-color-on-surface);
+}
+
+.book-author,
+.book-publisher,
+.book-date {
+	font-size: var(--md-sys-typescale-body-small-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+@media (max-width: 599px) {
+	.profile-name {
+		font-size: var(--md-sys-typescale-headline-medium-size);
+		line-height: var(--md-sys-typescale-headline-medium-line-height);
+	}
+
+	.profile-stats {
+		gap: var(--md-sys-spacing-4);
+	}
+
+	.speech-meta {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.speech-date {
+		margin-left: 0;
+	}
+}
+</style>

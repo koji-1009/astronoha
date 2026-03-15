@@ -1,0 +1,33 @@
+{
+	"name": "astronoha",
+	"type": "module",
+	"version": "0.1.0",
+	"private": true,
+	"license": "MIT",
+	"scripts": {
+		"dev": "astro dev",
+		"build": "astro build",
+		"preview": "astro preview",
+		"check": "biome ci .",
+		"format": "biome format --write .",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"e2e": "playwright test"
+	},
+	"dependencies": {
+		"@astrojs/cloudflare": "^13.0.0",
+		"@astrojs/react": "^5.0.0",
+		"astro": "^6.0.0",
+		"fast-xml-parser": "^5.5.5",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.0",
+		"@playwright/test": "^1.58.2",
+		"@types/react": "^19.0.0",
+		"@types/react-dom": "^19.0.0",
+		"typescript": "^5.8.0",
+		"vitest": "^4.1.0"
+	}
+}

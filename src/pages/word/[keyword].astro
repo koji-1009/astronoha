@@ -1,0 +1,505 @@
+---
+/**
+ * Search results page — cross-era keyword search.
+ *
+ * CRZ Layer 1-2: HTML cards and Heatmap rendered server-side.
+ * LlmPanel is a Layer 4 island.
+ *
+ * Data fetching is sequential (no Promise.all) per NDL API rate limits.
+ */
+
+import DeferredBookList from "@/features/search/components/DeferredBookList.astro";
+import DeferredSpeechList from "@/features/search/components/DeferredSpeechList.astro";
+import LlmPanel from "@/features/search/components/LlmPanel";
+import type { SpeechRecord } from "@/features/search/data/schemas";
+import { ui } from "@/i18n/ui";
+import Attribution from "@/shared/components/Attribution.astro";
+import Pagination from "@/shared/components/Pagination.astro";
+import BaseLayout from "@/shared/layout/BaseLayout.astro";
+import { formatDate, truncateSpeech } from "@/shared/lib/format";
+
+const keyword = Astro.params.keyword;
+if (!keyword) {
+	return Astro.redirect("/");
+}
+
+const decodedKeyword = decodeURIComponent(keyword);
+const pageParam = Astro.url.searchParams.get("page");
+const currentPage = pageParam ? Math.max(1, Number.parseInt(pageParam, 10)) : 1;
+const fromParam = Astro.url.searchParams.get("from") ?? undefined;
+const untilParam = Astro.url.searchParams.get("until") ?? undefined;
+const pageSize = 20;
+
+const targetParam = Astro.url.searchParams.get("target");
+const searchTarget: "kokkai" | "teikoku" | "both" =
+	targetParam === "kokkai" ||
+	targetParam === "teikoku" ||
+	targetParam === "both"
+		? targetParam
+		: "both";
+
+// Build baseUrl preserving query params for pagination
+const baseUrlPath = `/word/${encodeURIComponent(decodedKeyword)}`;
+// Page params for "both" mode (independent pagination)
+const kokkaiPage =
+	searchTarget === "both"
+		? Math.max(1, Number.parseInt(Astro.url.searchParams.get("kp") ?? "1", 10))
+		: currentPage;
+const teikokuPage =
+	searchTarget === "both"
+		? Math.max(1, Number.parseInt(Astro.url.searchParams.get("tp") ?? "1", 10))
+		: currentPage;
+
+// Build baseUrl preserving query params for pagination
+const extraParams = new URLSearchParams();
+if (fromParam) extraParams.set("from", fromParam);
+if (untilParam) extraParams.set("until", untilParam);
+if (targetParam) extraParams.set("target", targetParam);
+// In "both" mode, preserve both page params so each section's
+// pagination links don't lose the other section's current page.
+if (searchTarget === "both") {
+	extraParams.set("kp", String(kokkaiPage));
+	extraParams.set("tp", String(teikokuPage));
+}
+const baseUrl = extraParams.toString()
+	? `${baseUrlPath}?${extraParams.toString()}`
+	: baseUrlPath;
+
+// Heatmap link
+const heatmapHref =
+	searchTarget === "kokkai"
+		? `/word/${encodeURIComponent(decodedKeyword)}/heatmap`
+		: `/word/${encodeURIComponent(decodedKeyword)}/heatmap?target=${searchTarget}`;
+
+// --- "both" mode: Server Islands handle data fetching independently ---
+// --- single-source mode: frontmatter fetches data directly ---
+
+let allSpeeches: SpeechRecord[] = [];
+let totalRecords = 0;
+let totalPages = 0;
+const warnings: string[] = [];
+const startRecord = (currentPage - 1) * pageSize + 1;
+
+if (searchTarget !== "both") {
+	try {
+		const mod =
+			searchTarget === "kokkai"
+				? await import("@/features/search/data/kokkai")
+				: await import("@/features/search/data/teikoku");
+		const result = await mod.searchSpeeches({
+			keyword: decodedKeyword,
+			maximumRecords: pageSize,
+			startRecord,
+			from: fromParam,
+			until: untilParam,
+		});
+		allSpeeches = result.speechRecord ?? [];
+		totalRecords = result.numberOfRecords ?? 0;
+		totalPages = Math.ceil(totalRecords / pageSize);
+	} catch (error) {
+		const errorFn =
+			searchTarget === "kokkai"
+				? ui.error.kokkaiSearchFailed
+				: ui.error.teikokuSearchFailed;
+		warnings.push(
+			errorFn(error instanceof Error ? error.message : ui.error.unknownDetail),
+		);
+	}
+}
+---
+
+<BaseLayout
+	title={ui.search.resultsTitle(decodedKeyword)}
+	description={`「${decodedKeyword}」を国会会議録・帝国議会会議録から横断検索`}
+>
+	<div class="search-results">
+		<header class="results-header">
+			<h1 class="results-title">{ui.search.resultsTitle(decodedKeyword)}</h1>
+			{searchTarget !== "both" && totalRecords > 0 && (
+				<p class="results-count">
+					{ui.search.resultsCount(totalRecords)}
+				</p>
+			)}
+
+			<form method="GET" action="/" class="search-form-inline">
+				<label for="search-input" class="visually-hidden"
+					>{ui.a11y.searchKeyword}</label
+				>
+				<div class="search-field">
+					<input
+						id="search-input"
+						type="text"
+						name="q"
+						class="outlined"
+						value={decodedKeyword}
+						placeholder={ui.search.placeholderChange}
+					>
+					<button type="submit" class="outlined">{ui.search.reSearch}</button>
+				</div>
+			</form>
+
+			<nav class="target-chips" aria-label={ui.search.targetLabel}>
+				{(["both", "kokkai", "teikoku"] as const).map((t) => {
+					const label = t === "both" ? ui.search.targetBoth : t === "kokkai" ? ui.search.targetKokkai : ui.search.targetTeikoku;
+					const params = new URLSearchParams();
+					if (t !== "both") params.set("target", t);
+					if (fromParam) params.set("from", fromParam);
+					if (untilParam) params.set("until", untilParam);
+					const href = params.toString()
+						? `/word/${encodeURIComponent(decodedKeyword)}?${params.toString()}`
+						: `/word/${encodeURIComponent(decodedKeyword)}`;
+					return searchTarget === t
+						? <span class="target-chip active" aria-current="true">{label}</span>
+						: <a href={href} class="target-chip">{label}</a>;
+				})}
+			</nav>
+		</header>
+
+		{warnings.length > 0 && (
+			<div class="warning-container card">
+				{warnings.map((w) => (
+					<p class="warning-message">{w}</p>
+				))}
+			</div>
+		)}
+
+		{searchTarget !== "both" && allSpeeches.length === 0 && warnings.length === 0 && (
+			<div class="empty-container">
+				<p class="empty-message">
+					{ui.search.noResults(decodedKeyword)}
+				</p>
+				<p class="empty-hint">
+					{ui.search.noResultsHint}
+				</p>
+			</div>
+		)}
+
+		<a href={heatmapHref} class="heatmap-link card">
+			<span class="heatmap-link-title">{ui.heatmap.title}</span>
+			<span class="heatmap-link-description"
+				>年代ごとの発言件数をヒートマップで表示</span
+			>
+		</a>
+
+		{searchTarget === "both" ? (
+			<div class="speeches-section speeches-both">
+				<DeferredSpeechList
+					server:defer
+					keyword={decodedKeyword}
+					source="kokkai"
+					currentPage={kokkaiPage}
+					baseUrl={baseUrl}
+					pageParam="kp"
+					from={fromParam}
+					until={untilParam}
+				>
+					<section slot="fallback" class="source-section">
+						<h2 class="section-title">{ui.search.targetKokkai}</h2>
+						<p class="loading-text">{ui.search.speechList}…</p>
+					</section>
+				</DeferredSpeechList>
+
+				<DeferredSpeechList
+					server:defer
+					keyword={decodedKeyword}
+					source="teikoku"
+					currentPage={teikokuPage}
+					baseUrl={baseUrl}
+					pageParam="tp"
+					from={fromParam}
+					until={untilParam}
+				>
+					<section slot="fallback" class="source-section">
+						<h2 class="section-title">{ui.search.targetTeikoku}</h2>
+						<p class="loading-text">{ui.search.speechList}…</p>
+					</section>
+				</DeferredSpeechList>
+			</div>
+		) : allSpeeches.length > 0 ? (
+			<section class="speeches-section">
+				<h2 class="section-title">{ui.search.speechList}</h2>
+				<ol class="speech-list" start={startRecord}>
+					{allSpeeches.map((speech) => (
+						<li>
+							<a
+								href={`/word/${encodeURIComponent(decodedKeyword)}/${encodeURIComponent(speech.speechID)}`}
+								class="card speech-card"
+							>
+								<div class="speech-meta">
+									<span class="speech-house">{speech.nameOfHouse}</span>
+									<span class="speech-meeting">
+										{speech.nameOfMeeting} {speech.issue}
+									</span>
+									<time class="speech-date" datetime={speech.date ?? ""}>
+										{formatDate(speech.date)}
+									</time>
+								</div>
+								<p class="speech-speaker">{speech.speaker}</p>
+								<p class="speech-excerpt">
+									{truncateSpeech(speech.speech)}
+								</p>
+							</a>
+						</li>
+					))}
+				</ol>
+
+				<Pagination
+					currentPage={currentPage}
+					totalPages={totalPages}
+					baseUrl={baseUrl}
+				/>
+			</section>
+		) : null}
+
+		<DeferredBookList server:defer keyword={decodedKeyword}>
+			<section slot="fallback" class="books-section">
+				<h2 class="section-title">{ui.search.relatedBooks}</h2>
+				<p class="books-loading">{ui.bookCarousel.loading}</p>
+			</section>
+		</DeferredBookList>
+
+		<section class="llm-section">
+			<LlmPanel client:idle keyword={decodedKeyword} />
+		</section>
+
+		<footer class="results-footer"><Attribution /></footer>
+	</div>
+</BaseLayout>
+
+<style>
+.search-results {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-6);
+}
+
+.results-header {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-2);
+}
+
+.results-title {
+	font-size: var(--md-sys-typescale-headline-medium-size);
+	line-height: var(--md-sys-typescale-headline-medium-line-height);
+	font-weight: var(--md-sys-typescale-headline-medium-weight);
+	color: var(--md-sys-color-on-surface);
+}
+
+.results-count {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.count-detail {
+	font-size: var(--md-sys-typescale-body-small-size);
+}
+
+.search-form-inline {
+	margin-top: var(--md-sys-spacing-2);
+}
+
+.target-chips {
+	display: flex;
+	gap: var(--md-sys-spacing-2);
+	margin-top: var(--md-sys-spacing-2);
+}
+
+.target-chip {
+	display: inline-flex;
+	align-items: center;
+	padding: var(--md-sys-spacing-1) var(--md-sys-spacing-3);
+	border-radius: var(--md-sys-shape-corner-small);
+	font-size: var(--md-sys-typescale-label-large-size);
+	font-weight: var(--md-sys-typescale-label-large-weight);
+	text-decoration: none;
+	border: 1px solid var(--md-sys-color-outline);
+	color: var(--md-sys-color-on-surface-variant);
+	background: transparent;
+	transition: background-color 0.15s;
+}
+
+.target-chip:hover {
+	background: color-mix(
+		in srgb,
+		var(--md-sys-color-on-surface) 8%,
+		transparent
+	);
+}
+
+.target-chip.active {
+	background: var(--md-sys-color-secondary-container);
+	color: var(--md-sys-color-on-secondary-container);
+	border-color: transparent;
+}
+
+.search-field {
+	display: flex;
+	gap: var(--md-sys-spacing-2);
+	max-width: 480px;
+}
+
+.search-field input {
+	flex: 1;
+}
+
+.heatmap-link {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-1);
+	text-decoration: none;
+	color: inherit;
+	transition: box-shadow 0.2s;
+}
+
+.heatmap-link:hover {
+	box-shadow: var(--md-sys-elevation-2);
+}
+
+.heatmap-link-title {
+	font-size: var(--md-sys-typescale-title-small-size);
+	font-weight: var(--md-sys-typescale-title-small-weight);
+	color: var(--md-sys-color-primary);
+}
+
+.heatmap-link-description {
+	font-size: var(--md-sys-typescale-body-small-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.empty-hint {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+	margin-top: var(--md-sys-spacing-2);
+}
+
+.speeches-both {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: var(--md-sys-spacing-6);
+}
+
+@media (min-width: 840px) {
+	.speeches-both {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+.source-section {
+	padding-bottom: var(--md-sys-spacing-4);
+	margin-bottom: var(--md-sys-spacing-2);
+	border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+@media (min-width: 840px) {
+	.source-section {
+		border-bottom: none;
+		padding-bottom: 0;
+	}
+}
+
+.source-section:last-of-type {
+	border-bottom: none;
+	margin-bottom: 0;
+	padding-bottom: 0;
+}
+
+.speech-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-3);
+	list-style: none;
+	padding: 0;
+}
+
+.speech-card {
+	display: block;
+	text-decoration: none;
+	color: inherit;
+	transition:
+		box-shadow 0.2s,
+		background-color 0.2s;
+}
+
+.speech-card:hover {
+	box-shadow: var(--md-sys-elevation-2);
+	background: var(--md-sys-color-surface-container);
+}
+
+.speech-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--md-sys-spacing-2);
+	align-items: center;
+	margin-bottom: var(--md-sys-spacing-2);
+}
+
+.speech-house {
+	display: inline-block;
+	padding: var(--md-sys-spacing-0) var(--md-sys-spacing-2);
+	background: var(--md-sys-color-tertiary-container);
+	color: var(--md-sys-color-on-tertiary-container);
+	border-radius: var(--md-sys-shape-corner-extra-small);
+	font-size: var(--md-sys-typescale-label-small-size);
+	font-weight: var(--md-sys-typescale-label-small-weight);
+}
+
+.speech-meeting {
+	font-size: var(--md-sys-typescale-label-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.speech-date {
+	font-size: var(--md-sys-typescale-label-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+	margin-left: auto;
+}
+
+.speech-speaker {
+	font-size: var(--md-sys-typescale-title-small-size);
+	font-weight: var(--md-sys-typescale-title-small-weight);
+	color: var(--md-sys-color-primary);
+	margin-bottom: var(--md-sys-spacing-1);
+}
+
+.speech-excerpt {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	line-height: var(--md-sys-typescale-body-medium-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.books-section {
+	margin-top: var(--md-sys-spacing-4);
+}
+
+.books-loading,
+.loading-text {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.results-footer {
+	padding-top: var(--md-sys-spacing-6);
+	border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+@media (max-width: 599px) {
+	.results-title {
+		font-size: var(--md-sys-typescale-headline-small-size);
+		line-height: var(--md-sys-typescale-headline-small-line-height);
+	}
+
+	.search-field {
+		flex-direction: column;
+	}
+
+	.speech-meta {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.speech-date {
+		margin-left: 0;
+	}
+}
+</style>

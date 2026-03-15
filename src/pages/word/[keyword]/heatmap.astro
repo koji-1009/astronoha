@@ -1,0 +1,292 @@
+---
+/**
+ * Heatmap page — year-by-year speech frequency visualization.
+ *
+ * Data is generated incrementally via D1. Each request populates
+ * a batch of years. The page auto-refreshes until all years are complete.
+ * Subsequent visits load instantly from D1.
+ *
+ * CRZ Layer 1-2: server-rendered, auto-refresh via <meta http-equiv="refresh">.
+ */
+
+import Heatmap from "@/features/search/components/Heatmap.astro";
+import type { HeatmapData } from "@/features/search/data/heatmap";
+import { ui } from "@/i18n/ui";
+import Attribution from "@/shared/components/Attribution.astro";
+import BaseLayout from "@/shared/layout/BaseLayout.astro";
+
+const keywordParam = Astro.params.keyword;
+if (!keywordParam) {
+	return Astro.redirect("/");
+}
+const decodedKeyword = decodeURIComponent(keywordParam);
+
+const targetParam = Astro.url.searchParams.get("target");
+const target: "kokkai" | "teikoku" | "both" =
+	targetParam === "kokkai" ||
+	targetParam === "teikoku" ||
+	targetParam === "both"
+		? targetParam
+		: "kokkai";
+
+let heatmapData: HeatmapData | null = null;
+let errorMessage: string | null = null;
+let generated = 0;
+
+try {
+	const { env } = await import("cloudflare:workers");
+	const db = env.HEATMAP_DB;
+
+	if (!db) {
+		errorMessage = "ヒートマップデータベースが利用できません。";
+	} else {
+		const { getHeatmapData, generateHeatmapBatch } = await import(
+			"@/features/search/data/heatmap"
+		);
+		const { apiConfig } = await import("@/features/search/data/api-config");
+
+		heatmapData = await getHeatmapData(db, decodedKeyword, target);
+
+		if (!heatmapData.complete) {
+			generated = await generateHeatmapBatch(
+				db,
+				decodedKeyword,
+				target,
+				apiConfig,
+			);
+			// Re-read after generation to include new data
+			if (generated > 0) {
+				heatmapData = await getHeatmapData(db, decodedKeyword, target);
+			}
+		}
+	}
+} catch (error) {
+	errorMessage = error instanceof Error ? error.message : ui.error.unknownError;
+}
+
+const isGenerating = heatmapData !== null && !heatmapData.complete;
+const progressPercent = heatmapData
+	? Math.round((heatmapData.populatedYears / heatmapData.totalYears) * 100)
+	: 0;
+
+const targetLabel =
+	target === "both"
+		? ui.search.targetBoth
+		: target === "kokkai"
+			? ui.search.targetKokkai
+			: ui.search.targetTeikoku;
+---
+
+<BaseLayout
+	title={`「${decodedKeyword}」の${ui.heatmap.title}`}
+	description={`「${decodedKeyword}」の年代別出現頻度ヒートマップ`}
+>
+	{isGenerating && (
+		<meta http-equiv="refresh" content="5" slot="head" />
+	)}
+
+	<div class="heatmap-page">
+		<nav class="breadcrumb" aria-label={ui.nav.breadcrumb}>
+			<a href="/">{ui.nav.top}</a>
+			<span class="breadcrumb-separator" aria-hidden="true">/</span>
+			<a href={`/word/${encodeURIComponent(decodedKeyword)}`}>
+				{ui.search.resultsTitle(decodedKeyword)}
+			</a>
+			<span class="breadcrumb-separator" aria-hidden="true">/</span>
+			<span aria-current="page">{ui.heatmap.title}</span>
+		</nav>
+
+		<header class="page-header">
+			<h1 class="page-title">「{decodedKeyword}」の{ui.heatmap.title}</h1>
+			<nav class="target-chips" aria-label={ui.search.targetLabel}>
+				{(["kokkai", "teikoku", "both"] as const).map((t) => {
+					const label = t === "both" ? ui.search.targetBoth : t === "kokkai" ? ui.search.targetKokkai : ui.search.targetTeikoku;
+					const href = t === "kokkai"
+						? `/word/${encodeURIComponent(decodedKeyword)}/heatmap`
+						: `/word/${encodeURIComponent(decodedKeyword)}/heatmap?target=${t}`;
+					return target === t
+						? <span class="target-chip active" aria-current="true">{label}</span>
+						: <a href={href} class="target-chip">{label}</a>;
+				})}
+			</nav>
+		</header>
+
+		{errorMessage && (
+			<div class="error-container card">
+				<p class="error-title">{ui.error.label}</p>
+				<p class="error-message">{errorMessage}</p>
+			</div>
+		)}
+
+		{isGenerating && (
+			<div class="progress-container card">
+				<p class="progress-label">
+					データを生成中 — {heatmapData.populatedYears} / {heatmapData.totalYears} 年完了（{progressPercent}%）
+				</p>
+				<div class="progress-bar">
+					<div class="progress-fill" style={`width: ${progressPercent}%`} />
+				</div>
+				<p class="progress-description">
+					国立国会図書館APIへの負荷を抑えるため、年ごとに順次取得しています。初回のみ時間がかかりますが、一度生成されたデータは保存され、次回以降は即座に表示されます。
+				</p>
+				<p class="progress-hint">
+					このページは自動的に更新されます。しばらくお待ちください。
+				</p>
+			</div>
+		)}
+
+		{heatmapData && heatmapData.entries.length > 0 && (
+			<section class="heatmap-section">
+				<Heatmap data={heatmapData.entries} keyword={decodedKeyword} />
+			</section>
+		)}
+
+		{heatmapData?.complete && heatmapData.entries.length === 0 && (
+			<div class="empty-container">
+				<p class="empty-message">
+					{ui.search.noResults(decodedKeyword)}
+				</p>
+			</div>
+		)}
+
+		<footer class="page-footer"><Attribution /></footer>
+	</div>
+</BaseLayout>
+
+<style>
+.heatmap-page {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-6);
+}
+
+.breadcrumb {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--md-sys-spacing-1);
+	align-items: center;
+	font-size: var(--md-sys-typescale-label-medium-size);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.breadcrumb a {
+	color: var(--md-sys-color-primary);
+	text-decoration: none;
+}
+
+.breadcrumb a:hover {
+	text-decoration: underline;
+}
+
+.breadcrumb-separator {
+	color: var(--md-sys-color-outline);
+}
+
+.page-header {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-3);
+}
+
+.page-title {
+	font-size: var(--md-sys-typescale-headline-medium-size);
+	line-height: var(--md-sys-typescale-headline-medium-line-height);
+	font-weight: var(--md-sys-typescale-headline-medium-weight);
+	color: var(--md-sys-color-on-surface);
+}
+
+.target-chips {
+	display: flex;
+	gap: var(--md-sys-spacing-2);
+}
+
+.target-chip {
+	display: inline-flex;
+	align-items: center;
+	padding: var(--md-sys-spacing-1) var(--md-sys-spacing-3);
+	border-radius: var(--md-sys-shape-corner-small);
+	font-size: var(--md-sys-typescale-label-large-size);
+	font-weight: var(--md-sys-typescale-label-large-weight);
+	text-decoration: none;
+	border: 1px solid var(--md-sys-color-outline);
+	color: var(--md-sys-color-on-surface-variant);
+	background: transparent;
+}
+
+.target-chip:hover {
+	background: color-mix(
+		in srgb,
+		var(--md-sys-color-on-surface) 8%,
+		transparent
+	);
+}
+
+.target-chip.active {
+	background: var(--md-sys-color-secondary-container);
+	color: var(--md-sys-color-on-secondary-container);
+	border-color: transparent;
+}
+
+.error-container {
+	background: var(--md-sys-color-error-container);
+	color: var(--md-sys-color-on-error-container);
+}
+
+.error-title {
+	font-size: var(--md-sys-typescale-title-medium-size);
+	font-weight: var(--md-sys-typescale-title-medium-weight);
+	margin-bottom: var(--md-sys-spacing-2);
+}
+
+.error-message {
+	font-size: var(--md-sys-typescale-body-medium-size);
+}
+
+.progress-container {
+	display: flex;
+	flex-direction: column;
+	gap: var(--md-sys-spacing-2);
+}
+
+.progress-label {
+	font-size: var(--md-sys-typescale-body-medium-size);
+	color: var(--md-sys-color-on-surface);
+}
+
+.progress-bar {
+	height: 8px;
+	background: var(--md-sys-color-surface-container-high);
+	border-radius: var(--md-sys-shape-corner-full);
+	overflow: hidden;
+}
+
+.progress-fill {
+	height: 100%;
+	background: var(--md-sys-color-primary);
+	border-radius: var(--md-sys-shape-corner-full);
+	transition: width 0.3s;
+}
+
+.progress-description {
+	font-size: var(--md-sys-typescale-body-small-size);
+	line-height: var(--md-sys-typescale-body-small-line-height);
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+.progress-hint {
+	font-size: var(--md-sys-typescale-body-small-size);
+	color: var(--md-sys-color-primary);
+}
+
+.page-footer {
+	padding-top: var(--md-sys-spacing-6);
+	border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+@media (max-width: 599px) {
+	.page-title {
+		font-size: var(--md-sys-typescale-headline-small-size);
+		line-height: var(--md-sys-typescale-headline-small-line-height);
+	}
+}
+</style>
