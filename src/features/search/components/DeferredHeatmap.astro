@@ -7,7 +7,12 @@
  * Astro view transitions (navigate) until generation is complete.
  */
 
-import type { HeatmapData } from "@/features/search/data/heatmap";
+import { apiConfig } from "@/features/search/data/api-config";
+import {
+	generateHeatmapBatch,
+	getHeatmapData,
+	type HeatmapData,
+} from "@/features/search/data/heatmap";
 import { ui } from "@/i18n/ui";
 import Heatmap from "./Heatmap.astro";
 
@@ -23,17 +28,13 @@ let errorMessage: string | null = null;
 let generated = 0;
 
 try {
+	// cloudflare:workers is a runtime-only module — must use dynamic import
 	const { env } = await import("cloudflare:workers");
 	const db = env.HEATMAP_DB;
 
 	if (!db) {
 		errorMessage = ui.heatmap.dbUnavailable;
 	} else {
-		const { getHeatmapData, generateHeatmapBatch } = await import(
-			"@/features/search/data/heatmap"
-		);
-		const { apiConfig } = await import("@/features/search/data/api-config");
-
 		heatmapData = await getHeatmapData(db, keyword, target);
 
 		if (!heatmapData.complete) {

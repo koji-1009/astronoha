@@ -6,6 +6,7 @@
  * with the sequential NDL Search API call.
  */
 
+import { searchBooks } from "@/features/search/data/ndl-search";
 import { getThumbnailUrl } from "@/features/search/data/ndl-thumbnail";
 import BookCarousel from "./BookCarousel.astro";
 
@@ -14,8 +15,6 @@ interface Props {
 }
 
 const { keyword } = Astro.props;
-
-const { searchBooks } = await import("@/features/search/data/ndl-search");
 const relatedBooks = await searchBooks(keyword, { count: 10 });
 
 const carouselBooks = (relatedBooks?.items ?? [])

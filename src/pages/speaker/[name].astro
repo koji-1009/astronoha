@@ -5,8 +5,13 @@
  * CRZ Layer 1-2: profile info, speech list, keyword cloud as HTML.
  */
 
+import type { NdlBook } from "@/features/search/data/schemas";
 import KeywordCloud from "@/features/speaker/components/KeywordCloud.astro";
-import type { SpeakerProfile } from "@/features/speaker/data/speaker";
+import {
+	getRelatedBooks,
+	type SpeakerProfile,
+	searchSpeaker,
+} from "@/features/speaker/data/speaker";
 import { ui } from "@/i18n/ui";
 import SpeechCard from "@/shared/components/SpeechCard.astro";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
@@ -23,7 +28,6 @@ let profile: SpeakerProfile | null = null;
 let errorMessage: string | null = null;
 
 try {
-	const { searchSpeaker } = await import("@/features/speaker/data/speaker");
 	profile = await searchSpeaker(decodedName);
 } catch (error) {
 	errorMessage =
@@ -31,12 +35,9 @@ try {
 }
 
 // Fetch related books (sequential after speaker search)
-let relatedBooks: Awaited<
-	ReturnType<typeof import("@/features/speaker/data/speaker").getRelatedBooks>
-> = [];
+let relatedBooks: NdlBook[] = [];
 if (profile && !errorMessage) {
 	try {
-		const { getRelatedBooks } = await import("@/features/speaker/data/speaker");
 		relatedBooks = await getRelatedBooks(decodedName);
 	} catch {
 		// Non-critical failure

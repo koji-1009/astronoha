@@ -7,6 +7,7 @@
  * and the server redirects to /timeline/YYYY-MM.
  */
 
+import { getAvailablePeriods } from "@/features/timeline/data/timeline";
 import { ui } from "@/i18n/ui";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
 
@@ -31,9 +32,6 @@ if (periodParam) {
 	periodError = ui.timeline.customPeriodInvalid(periodParam);
 }
 
-const { getAvailablePeriods } = await import(
-	"@/features/timeline/data/timeline"
-);
 const periods = getAvailablePeriods();
 
 // Group periods by era

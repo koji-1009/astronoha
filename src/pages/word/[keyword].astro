@@ -11,7 +11,9 @@
 import DeferredBookList from "@/features/search/components/DeferredBookList.astro";
 import DeferredSpeechList from "@/features/search/components/DeferredSpeechList.astro";
 import LlmPanel from "@/features/search/components/LlmPanel";
+import { searchSpeeches as searchKokkaiSpeeches } from "@/features/search/data/kokkai";
 import type { SpeechRecord } from "@/features/search/data/schemas";
+import { searchSpeeches as searchTeikokuSpeeches } from "@/features/search/data/teikoku";
 import { ui } from "@/i18n/ui";
 import Pagination from "@/shared/components/Pagination.astro";
 import SpeechCard from "@/shared/components/SpeechCard.astro";
@@ -86,11 +88,9 @@ const startRecord = (currentPage - 1) * pageSize + 1;
 
 if (searchTarget !== "both") {
 	try {
-		const mod =
-			searchTarget === "kokkai"
-				? await import("@/features/search/data/kokkai")
-				: await import("@/features/search/data/teikoku");
-		const result = await mod.searchSpeeches({
+		const searchFn =
+			searchTarget === "kokkai" ? searchKokkaiSpeeches : searchTeikokuSpeeches;
+		const result = await searchFn({
 			keyword: decodedKeyword,
 			maximumRecords: pageSize,
 			startRecord,

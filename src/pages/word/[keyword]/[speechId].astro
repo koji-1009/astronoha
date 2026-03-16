@@ -8,7 +8,9 @@
 
 import DeferredBookCarousel from "@/features/search/components/DeferredBookCarousel.astro";
 import LlmPanel from "@/features/search/components/LlmPanel";
+import { getSpeechById as getKokkaiSpeechById } from "@/features/search/data/kokkai";
 import type { SpeechRecord } from "@/features/search/data/schemas";
+import { getSpeechById as getTeikokuSpeechById } from "@/features/search/data/teikoku";
 import { ui } from "@/i18n/ui";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
 import { formatDate } from "@/shared/lib/format";
@@ -26,8 +28,7 @@ let errorMessage: string | null = null;
 let lastError: unknown = null;
 
 try {
-	const { getSpeechById } = await import("@/features/search/data/kokkai");
-	const result = await getSpeechById(decodedSpeechId);
+	const result = await getKokkaiSpeechById(decodedSpeechId);
 	if (result.speechRecord && result.speechRecord.length > 0) {
 		speech = result.speechRecord[0];
 	}
@@ -37,9 +38,6 @@ try {
 
 if (!speech) {
 	try {
-		const { getSpeechById: getTeikokuSpeechById } = await import(
-			"@/features/search/data/teikoku"
-		);
 		const result = await getTeikokuSpeechById(decodedSpeechId);
 		if (result.speechRecord && result.speechRecord.length > 0) {
 			speech = result.speechRecord[0];

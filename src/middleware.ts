@@ -24,7 +24,7 @@ async function applyCloudflareEnv(): Promise<void> {
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
-	await applyCloudflareEnv();
+	if (!envApplied) await applyCloudflareEnv();
 
 	const response = await next();
 

@@ -10,7 +10,11 @@
  */
 
 import TimelineScroll from "@/features/timeline/components/TimelineScroll.astro";
-import type { TimelineData } from "@/features/timeline/data/timeline";
+import {
+	getTimelineData,
+	parsePeriod,
+	type TimelineData,
+} from "@/features/timeline/data/timeline";
 import { ui } from "@/i18n/ui";
 import BaseLayout from "@/shared/layout/BaseLayout.astro";
 
@@ -35,7 +39,6 @@ let periodLabel = periodParam;
 
 // Validate the period format
 try {
-	const { parsePeriod } = await import("@/features/timeline/data/timeline");
 	const parsed = parsePeriod(periodParam);
 	periodLabel = `${parsed.year}年${parsed.month}月`;
 } catch (error) {
@@ -46,9 +49,6 @@ try {
 // Fetch timeline data if keyword is provided
 if (keyword && !errorMessage) {
 	try {
-		const { getTimelineData } = await import(
-			"@/features/timeline/data/timeline"
-		);
 		timelineData = await getTimelineData(keyword, periodParam);
 		warnings.push(...timelineData.warnings);
 	} catch (error) {

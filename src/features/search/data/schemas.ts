@@ -54,17 +54,19 @@ export type SpeechResponse = z.infer<typeof SpeechResponseSchema>;
 // NDL Search Book Result (parsed from XML)
 // ============================================================
 
-export const NdlBookSchema = z.object({
-	title: z.string(),
-	link: z.string(),
-	author: z.string().optional(),
-	publisher: z.string().optional(),
-	description: z.string().optional(),
-	date: z.string().optional(),
-	identifier: z.string().optional(),
-	isbn: z.string().optional(),
-	jpNumber: z.string().optional(),
-});
+export const NdlBookSchema = z
+	.object({
+		title: z.string(),
+		link: z.string(),
+		author: z.string().optional(),
+		publisher: z.string().optional(),
+		description: z.string().optional(),
+		date: z.string().optional(),
+		identifier: z.string().optional(),
+		isbn: z.string().optional(),
+		jpNumber: z.string().optional(),
+	})
+	.passthrough();
 
 export type NdlBook = z.infer<typeof NdlBookSchema>;
 

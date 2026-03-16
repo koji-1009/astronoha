@@ -6,6 +6,8 @@
  * pagination. Deferred via server:defer so the page shell returns immediately.
  */
 
+import { searchSpeeches as searchKokkaiSpeeches } from "@/features/search/data/kokkai";
+import { searchSpeeches as searchTeikokuSpeeches } from "@/features/search/data/teikoku";
 import { ui } from "@/i18n/ui";
 import Pagination from "@/shared/components/Pagination.astro";
 import SpeechCard from "@/shared/components/SpeechCard.astro";
@@ -43,11 +45,9 @@ let totalRecords = 0;
 let errorMessage: string | null = null;
 
 try {
-	const mod =
-		source === "kokkai"
-			? await import("@/features/search/data/kokkai")
-			: await import("@/features/search/data/teikoku");
-	const result = await mod.searchSpeeches({
+	const searchFn =
+		source === "kokkai" ? searchKokkaiSpeeches : searchTeikokuSpeeches;
+	const result = await searchFn({
 		keyword,
 		maximumRecords: pageSize,
 		startRecord,

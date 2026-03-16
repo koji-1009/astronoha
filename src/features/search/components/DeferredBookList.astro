@@ -6,6 +6,7 @@
  * with the sequential NDL Search API call.
  */
 
+import { searchBooks } from "@/features/search/data/ndl-search";
 import { ui } from "@/i18n/ui";
 
 interface Props {
@@ -13,8 +14,6 @@ interface Props {
 }
 
 const { keyword } = Astro.props;
-
-const { searchBooks } = await import("@/features/search/data/ndl-search");
 const relatedBooks = await searchBooks(keyword, { count: 5 });
 const books = relatedBooks?.items ?? [];
 ---
