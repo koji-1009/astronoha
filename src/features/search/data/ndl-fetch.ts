@@ -85,24 +85,25 @@ export async function ndlFetch(url: string): Promise<Response> {
 
 			if (!response.ok) return response;
 
-			// Consume body once, use for both cache and return
-			const body = await response.text();
+			// Stream clone body directly to cache; return original untouched.
+			// cache.put() accepts a Response and streams internally —
+			// no text() conversion needed, saving CPU on large bodies.
 			if (edgeCache) {
 				try {
 					const headers = new Headers(response.headers);
 					headers.set("Cache-Control", `public, max-age=${CACHE_TTL_S}`);
 					edgeCache.put(
 						url,
-						new Response(body, { status: response.status, headers }),
+						new Response(response.clone().body, {
+							status: response.status,
+							headers,
+						}),
 					);
 				} catch {
 					// Edge cache write failed
 				}
 			}
-			return new Response(body, {
-				status: response.status,
-				headers: response.headers,
-			});
+			return response;
 		} catch (error) {
 			lastError = error;
 			if (error instanceof DOMException && error.name === "TimeoutError") {
