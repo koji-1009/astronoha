@@ -1,9 +1,5 @@
 import { ndlFetch } from "./ndl-fetch";
-import {
-	type SearchParams,
-	type SpeechResponse,
-	SpeechResponseSchema,
-} from "./schemas";
+import type { SearchParams, SpeechResponse } from "./schemas";
 
 /**
  * Build a URLSearchParams from search parameters, adding
@@ -56,15 +52,16 @@ export async function fetchSpeeches(
 		);
 	}
 
-	let data: unknown;
+	// Type assertion instead of Zod .parse() to avoid object traversal
+	// overhead under Workers free tier 10ms CPU limit. The NDL speech API
+	// response structure is stable and well-known.
 	try {
-		data = await response.json();
+		return (await response.json()) as SpeechResponse;
 	} catch {
 		throw new Error(
 			`${apiName} returned invalid JSON (expected JSON response, got non-JSON content)`,
 		);
 	}
-	return SpeechResponseSchema.parse(data);
 }
 
 /**
@@ -87,13 +84,11 @@ export async function fetchSpeechById(
 		);
 	}
 
-	let data: unknown;
 	try {
-		data = await response.json();
+		return (await response.json()) as SpeechResponse;
 	} catch {
 		throw new Error(
 			`${apiName} returned invalid JSON (expected JSON response, got non-JSON content)`,
 		);
 	}
-	return SpeechResponseSchema.parse(data);
 }

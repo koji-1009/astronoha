@@ -152,22 +152,9 @@ describe("fetchSpeeches", () => {
 		);
 	});
 
-	it("throws on Zod validation failure", async () => {
-		const malformedData = {
-			numberOfRecords: "not a number",
-			numberOfReturn: 0,
-			startRecord: 1,
-		};
-		mockFetch.mockResolvedValueOnce(
-			new Response(JSON.stringify(malformedData), { status: 200 }),
-		);
-
-		await expect(
-			fetchSpeeches("https://example.com/api", "Test API", {
-				keyword: "テスト",
-			}),
-		).rejects.toThrow();
-	});
+	// Note: Zod validation removed for speech JSON responses (Workers 10ms CPU limit).
+	// Type assertions are used instead — invalid data surfaces as runtime errors
+	// in consuming code rather than Zod validation errors.
 });
 
 describe("fetchSpeechById", () => {

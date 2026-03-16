@@ -8,7 +8,7 @@
 
 import { z } from "astro/zod";
 import { ndlFetch } from "./ndl-fetch";
-import { SpeechResponseSchema } from "./schemas";
+import type { SpeechResponse } from "./schemas";
 import { buildSpeechParams } from "./speech-api";
 
 const HeatmapRowSchema = z.object({
@@ -88,9 +88,12 @@ async function fetchYearCount(
 	const response = await ndlFetch(url);
 	if (!response.ok) return 0;
 
-	const data: unknown = await response.json();
-	const parsed = SpeechResponseSchema.safeParse(data);
-	return parsed.success ? parsed.data.numberOfRecords : 0;
+	try {
+		const data = (await response.json()) as SpeechResponse;
+		return data.numberOfRecords;
+	} catch {
+		return 0;
+	}
 }
 
 /**

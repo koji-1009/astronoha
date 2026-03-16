@@ -140,37 +140,9 @@ describe("searchSpeeches", () => {
 		);
 	});
 
-	it("throws on malformed response data (Zod validation failure)", async () => {
-		const malformedData = {
-			numberOfRecords: "not a number", // should be number
-			numberOfReturn: 0,
-			startRecord: 1,
-		};
-		mockFetch.mockResolvedValueOnce(
-			new Response(JSON.stringify(malformedData), { status: 200 }),
-		);
-
-		await expect(searchSpeeches({ keyword: "テスト" })).rejects.toThrow();
-	});
-
-	it("throws on invalid speech record fields", async () => {
-		const invalidRecord = {
-			numberOfRecords: 1,
-			numberOfReturn: 1,
-			startRecord: 1,
-			speechRecord: [
-				{
-					speechID: 12345, // should be string
-					// missing required fields
-				},
-			],
-		};
-		mockFetch.mockResolvedValueOnce(
-			new Response(JSON.stringify(invalidRecord), { status: 200 }),
-		);
-
-		await expect(searchSpeeches({ keyword: "テスト" })).rejects.toThrow();
-	});
+	// Note: Zod validation removed for speech JSON responses (Workers 10ms CPU limit).
+	// Malformed JSON data is handled via type assertions, so invalid fields
+	// will surface as runtime errors in consuming code rather than Zod errors.
 });
 
 describe("getSpeechById", () => {

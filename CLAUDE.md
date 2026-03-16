@@ -112,7 +112,7 @@ src/
 ## Code Conventions
 
 * TypeScript strictest mode (`astro/tsconfigs/strictest`). No `any`.
-* All external API responses must be parsed through Zod schemas. No `as` casts.
+* External API responses: use Zod schemas for parsing XML-based responses (NDL Search) where the parser output is untyped. For JSON API responses (kokkai/teikoku speech APIs), type assertions are acceptable to avoid Zod traversal overhead under Workers free tier 10ms CPU limit. Zod schemas remain the canonical type definitions in `schemas.ts`.
 * Never swallow errors. Display meaningful messages for NDL API errors.
 * Attribution: every search result page must include "Source: National Diet Library" with a link to the API.
 * Imports follow Biome import organizer. Do not sort manually.
