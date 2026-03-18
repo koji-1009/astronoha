@@ -134,9 +134,9 @@ function ResultContent({ markdown }: { markdown: string }) {
 	);
 }
 
-/** Build a sessionStorage key scoped to this page and action. */
+/** Build a sessionStorage key scoped to this page + query params and action. */
 function storageKey(action: string): string {
-	return `llm_${action}_${window.location.pathname}`;
+	return `llm_${action}_${window.location.pathname}${window.location.search}`;
 }
 
 function saveResult(action: string, result: string): void {
@@ -232,7 +232,7 @@ function LlmPanelInner({
 
 	// Restore previous result from sessionStorage on mount
 	useEffect(() => {
-		for (const action of ["summary", "keywords", "context"]) {
+		for (const action of ["summary", "keywords", "context", "trend"]) {
 			const saved = loadResult(action);
 			if (saved) {
 				setState((prev) => ({
