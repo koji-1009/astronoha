@@ -37,6 +37,7 @@ npm run preview    # Preview build output
 npm run check      # Biome lint + format check
 npm run format     # Biome auto-format
 npm test           # Run Vitest
+npm run test:coverage  # Vitest with coverage (80% threshold, runs in CI)
 npm run test:watch # Vitest watch mode
 npm run e2e        # Playwright E2E tests (requires build first)
 npx wrangler d1 migrations apply astronoha-heatmap --local  # Apply D1 migrations (local dev)
@@ -133,7 +134,7 @@ In addition to CRZ Test Strategy, apply these astronoha-specific rules:
 * Test framework: Vitest.
 * **Full unit tests for all external API connections. This is mandatory.**
   * Every module under `src/features/*/data/` must have corresponding tests.
-  * Coverage: request URL construction, response parsing (happy path), response parsing (error/missing fields), Zod validation failures, error response handling.
+  * Coverage: request URL construction, response parsing (happy path), response parsing (error/missing fields), error response handling.
   * Rate limiting, caching, retry, and timeout are tested in `ndl-fetch.test.ts`. Do not duplicate in consumer tests.
   * Mock HTTP requests. Never hit actual NDL APIs in tests.
   * Store real NDL API responses as fixtures in `tests/fixtures/`.
