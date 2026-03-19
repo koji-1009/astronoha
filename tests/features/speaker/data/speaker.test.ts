@@ -458,13 +458,14 @@ describe("getRelatedBooks", () => {
 		expect(books).toHaveLength(2);
 	});
 
-	it("returns empty array on API error", async () => {
+	it("throws on API error", async () => {
 		ndlSearchBooks.mockRejectedValueOnce(
 			new Error("NDL Search API request failed: 500 Internal Server Error"),
 		);
 
-		const books = await getRelatedBooks("田中一郎");
-		expect(books).toEqual([]);
+		await expect(getRelatedBooks("田中一郎")).rejects.toThrow(
+			"NDL Search API request failed: 500 Internal Server Error",
+		);
 	});
 
 	it("returns empty array when API returns no items", async () => {

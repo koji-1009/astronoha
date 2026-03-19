@@ -39,8 +39,12 @@ let relatedBooks: NdlBook[] = [];
 if (profile && !errorMessage) {
 	try {
 		relatedBooks = await getRelatedBooks(decodedName);
-	} catch {
-		// Non-critical failure
+	} catch (error) {
+		profile.warnings.push(
+			ui.error.publicationRetrieveFailed(
+				error instanceof Error ? error.message : ui.error.unknownDetail,
+			),
+		);
 	}
 }
 ---

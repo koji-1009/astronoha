@@ -3,7 +3,6 @@ import { searchSpeeches as searchKokkaiSpeeches } from "../../search/data/kokkai
 import { searchBooks } from "../../search/data/ndl-search";
 import type {
 	NdlBook,
-	NdlSearchResponse,
 	SpeechRecord,
 	SpeechResponse,
 } from "../../search/data/schemas";
@@ -263,14 +262,9 @@ export function extractKeywords(
 
 /**
  * Search NDL for books related to a speaker.
- * Returns an empty array if the API call fails.
+ * @throws {Error} On API failure — caller should handle and display warning.
  */
 export async function getRelatedBooks(speakerName: string): Promise<NdlBook[]> {
-	let response: NdlSearchResponse;
-	try {
-		response = await searchBooks(speakerName);
-	} catch {
-		return [];
-	}
+	const response = await searchBooks(speakerName);
 	return response.items;
 }
