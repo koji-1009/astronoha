@@ -19,12 +19,15 @@ const HeatmapRowSchema = z.object({
 const ExistingPairSchema = z.object({
 	target: z.string(),
 	year: z.number(),
+	created_at: z.string().optional(),
 });
 
 const KOKKAI_START_YEAR = 1947;
 const TEIKOKU_START_YEAR = 1890;
 const TEIKOKU_END_YEAR = 1947;
 const BATCH_SIZE = 10;
+/** Stale threshold for the current year's data (12 hours in seconds). */
+const CURRENT_YEAR_STALE_S = 12 * 60 * 60;
 
 export interface HeatmapEntry {
 	year: number;
@@ -148,21 +151,32 @@ export async function generateHeatmapBatch(
 	const expectedYears = getExpectedYears(target);
 	const targets = target === "both" ? ["kokkai", "teikoku"] : [target];
 
-	// Find which (target, year) pairs are missing
+	// Find which (target, year) pairs are already populated.
+	// Include created_at to detect stale current-year data.
 	const existing = await db
 		.prepare(
-			`SELECT target, year FROM heatmap
+			`SELECT target, year, created_at FROM heatmap
 			 WHERE keyword = ? AND target IN (${targets.map(() => "?").join(", ")})`,
 		)
 		.bind(keyword, ...targets)
 		.all();
 
+	const currentYear = new Date().getFullYear();
+	const nowEpoch = Date.now();
 	const existingSet = new Set<string>();
 	for (const row of existing.results) {
 		const parsed = ExistingPairSchema.safeParse(row);
-		if (parsed.success) {
-			existingSet.add(`${parsed.data.target}:${parsed.data.year}`);
+		if (!parsed.success) continue;
+		const { target: t, year: y, created_at } = parsed.data;
+		// Current year data older than CURRENT_YEAR_STALE_S is treated as missing
+		// so it gets re-fetched with fresh counts.
+		if (y === currentYear && created_at) {
+			const createdEpoch = new Date(`${created_at}Z`).getTime();
+			if (nowEpoch - createdEpoch > CURRENT_YEAR_STALE_S * 1000) {
+				continue; // stale — don't add to existingSet
+			}
 		}
+		existingSet.add(`${t}:${y}`);
 	}
 
 	const missing: Array<{ target: "kokkai" | "teikoku"; year: number }> = [];

@@ -348,4 +348,63 @@ describe("generateHeatmapBatch", () => {
 		expect(firstUrl).toContain("from=1890-01-01");
 		expect(firstUrl).toContain("until=1890-12-31");
 	});
+
+	it("re-fetches current year data when stale (older than 12 hours)", async () => {
+		const currentYear = new Date().getFullYear();
+		// D1 datetime('now') format: "YYYY-MM-DD HH:MM:SS" (UTC, no Z suffix)
+		const toD1DateTime = (date: Date) =>
+			date
+				.toISOString()
+				.replace("T", " ")
+				.replace(/\.\d+Z$/, "");
+		const staleDate = toD1DateTime(new Date(Date.now() - 24 * 60 * 60 * 1000));
+		const freshDate = toD1DateTime(new Date());
+		// All years populated, but current year has stale created_at
+		const existingPairs: MockRow[] = [];
+		for (let y = 1947; y <= currentYear; y++) {
+			existingPairs.push({
+				target: "kokkai",
+				year: y,
+				created_at: y === currentYear ? staleDate : freshDate,
+			});
+		}
+		const db = createMockDb({ allResults: existingPairs });
+
+		ndlFetch.mockImplementation(() => Promise.resolve(makeSpeechResponse(99)));
+
+		const result = await generateHeatmapBatch(db, "経済", "kokkai", apiConfig);
+
+		// Should re-fetch exactly 1 year (the stale current year)
+		expect(result).toBe(1);
+		expect(ndlFetch).toHaveBeenCalledOnce();
+
+		const url = ndlFetch.mock.calls[0][0] as string;
+		expect(url).toContain(`from=${currentYear}-01-01`);
+		expect(url).toContain(`until=${currentYear}-12-31`);
+	});
+
+	it("does not re-fetch current year data when fresh", async () => {
+		const currentYear = new Date().getFullYear();
+		const toD1DateTime = (date: Date) =>
+			date
+				.toISOString()
+				.replace("T", " ")
+				.replace(/\.\d+Z$/, "");
+		const freshDate = toD1DateTime(new Date());
+		const existingPairs: MockRow[] = [];
+		for (let y = 1947; y <= currentYear; y++) {
+			existingPairs.push({
+				target: "kokkai",
+				year: y,
+				created_at: freshDate,
+			});
+		}
+		const db = createMockDb({ allResults: existingPairs });
+
+		const result = await generateHeatmapBatch(db, "経済", "kokkai", apiConfig);
+
+		// Nothing to re-fetch
+		expect(result).toBe(0);
+		expect(ndlFetch).not.toHaveBeenCalled();
+	});
 });
