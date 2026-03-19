@@ -519,6 +519,18 @@ function LlmPanelInner({
 }
 
 export default function LlmPanel(props: LlmPanelProps) {
+	const [enabled, setEnabled] = useState(false);
+
+	useEffect(() => {
+		try {
+			setEnabled(localStorage.getItem("astronoha_autoSummary") === "true");
+		} catch {
+			// localStorage unavailable
+		}
+	}, []);
+
+	if (!enabled) return null;
+
 	return (
 		<ErrorBoundary>
 			<LlmPanelInner {...props} />
