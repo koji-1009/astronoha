@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ui } from "@/i18n/ui";
 import { ErrorBoundary } from "../../../shared/components/ErrorBoundary";
 import {
@@ -230,11 +230,56 @@ function LlmPanelInner({
 		};
 	}, []);
 
+	const getSession = useCallback(
+		async (systemPrompt: string): Promise<AISession> => {
+			if (sessionRef.current) {
+				sessionRef.current.destroy();
+				sessionRef.current = null;
+			}
+			const session = await createSession(systemPrompt);
+			sessionRef.current = session;
+			return session;
+		},
+		[],
+	);
+
+	const runAction = useCallback(
+		async (actionName: string, systemPrompt: string, userPrompt: string) => {
+			setState((prev) => ({
+				...prev,
+				loading: true,
+				error: "",
+				result: "",
+				activeAction: actionName,
+			}));
+			try {
+				const session = await getSession(systemPrompt);
+				const result = await session.prompt(userPrompt);
+				saveResult(actionName, result);
+				setState((prev) => ({
+					...prev,
+					loading: false,
+					result,
+					activeAction: actionName,
+				}));
+			} catch (err) {
+				setState((prev) => ({
+					...prev,
+					loading: false,
+					error: err instanceof Error ? err.message : ui.llm.generateError,
+				}));
+			}
+		},
+		[getSession],
+	);
+
 	// Restore previous result from sessionStorage on mount
+	const hasCache = useRef(false);
 	useEffect(() => {
 		for (const action of ["summary", "keywords", "context", "trend"]) {
 			const saved = loadResult(action);
 			if (saved) {
+				hasCache.current = true;
 				setState((prev) => ({
 					...prev,
 					result: saved,
@@ -245,46 +290,58 @@ function LlmPanelInner({
 		}
 	}, []);
 
-	async function getSession(systemPrompt: string): Promise<AISession> {
-		if (sessionRef.current) {
-			sessionRef.current.destroy();
-			sessionRef.current = null;
+	// Auto-run first action when autoSummary is enabled, AI becomes available,
+	// and no cached result exists. Refs guard against re-runs so the effect
+	// only fires once despite the broad dependency array.
+	const autoRanRef = useRef(false);
+	useEffect(() => {
+		if (
+			state.status !== "available" ||
+			state.loading ||
+			hasCache.current ||
+			autoRanRef.current
+		) {
+			return;
 		}
-		const session = await createSession(systemPrompt);
-		sessionRef.current = session;
-		return session;
-	}
-
-	async function runAction(
-		actionName: string,
-		systemPrompt: string,
-		userPrompt: string,
-	) {
-		setState((prev) => ({
-			...prev,
-			loading: true,
-			error: "",
-			result: "",
-			activeAction: actionName,
-		}));
+		let autoSummary = false;
 		try {
-			const session = await getSession(systemPrompt);
-			const result = await session.prompt(userPrompt);
-			saveResult(actionName, result);
-			setState((prev) => ({
-				...prev,
-				loading: false,
-				result,
-				activeAction: actionName,
-			}));
-		} catch (err) {
-			setState((prev) => ({
-				...prev,
-				loading: false,
-				error: err instanceof Error ? err.message : ui.llm.generateError,
-			}));
+			autoSummary = localStorage.getItem("astronoha_autoSummary") === "true";
+		} catch {
+			// localStorage unavailable
 		}
-	}
+		if (!autoSummary) return;
+		autoRanRef.current = true;
+		const first = enabledActions[0];
+		if (first === "summary" && speechText) {
+			runAction("summary", SYSTEM_PROMPTS.summary, speechText);
+		} else if (first === "keywords" && keyword) {
+			runAction(
+				"keywords",
+				SYSTEM_PROMPTS.keywords(keyword),
+				`「${keyword}」に関連する検索キーワードを提案してください`,
+			);
+		} else if (first === "context" && year !== undefined) {
+			runAction(
+				"context",
+				SYSTEM_PROMPTS.context(year),
+				`${year}年の時代背景を教えてください`,
+			);
+		} else if (first === "trend" && keyword) {
+			runAction(
+				"trend",
+				SYSTEM_PROMPTS.trend(keyword),
+				`「${keyword}」の議会での使用頻度の傾向を分析してください`,
+			);
+		}
+	}, [
+		state.status,
+		state.loading,
+		enabledActions,
+		speechText,
+		keyword,
+		year,
+		runAction,
+	]);
 
 	function handleSummarize() {
 		if (!speechText) return;
@@ -520,18 +577,6 @@ function LlmPanelInner({
 }
 
 export default function LlmPanel(props: LlmPanelProps) {
-	const [enabled, setEnabled] = useState(false);
-
-	useEffect(() => {
-		try {
-			setEnabled(localStorage.getItem("astronoha_autoSummary") === "true");
-		} catch {
-			// localStorage unavailable
-		}
-	}, []);
-
-	if (!enabled) return null;
-
 	return (
 		<ErrorBoundary>
 			<LlmPanelInner {...props} />

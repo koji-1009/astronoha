@@ -194,7 +194,7 @@ tests/
 Settings are client-only (localStorage). No server interaction needed.
 
 * **colorMode** ("system" | "light" | "dark"): stored in `localStorage["astronoha_colorMode"]`. Applied via inline `<script>` before first paint to avoid FOUC. Settings page binds `change` events to update localStorage and `data-color-mode` attribute.
-* **autoSummary** (boolean): stored in `localStorage["astronoha_autoSummary"]`. Controls Chrome AI panel visibility.
+* **autoSummary** (boolean): stored in `localStorage["astronoha_autoSummary"]`. When enabled, Chrome AI automatically runs the primary action on page load (summary on speech detail, keywords on search results, trend on heatmap). The panel is always visible when Chrome AI is available; this setting only controls automatic execution.
 * **searchTarget**: not a setting — URL-driven via `?target=kokkai|teikoku|both` query parameter (default: "both").
 * All pages render identical HTML regardless of user preferences, enabling CDN caching (`s-maxage=3600`).
 
