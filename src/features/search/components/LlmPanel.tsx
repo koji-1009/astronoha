@@ -347,7 +347,7 @@ function LlmPanelInner({
 				{ui.llm.title}
 			</h3>
 
-			{state.status === "checking" && (
+			{state.status === "checking" && !state.result && (
 				<p
 					style={{
 						color: "var(--md-sys-color-on-surface-variant)",
@@ -358,55 +358,56 @@ function LlmPanelInner({
 				</p>
 			)}
 
-			{(state.status === "unavailable" || state.status === "no-api") && (
-				<div
-					style={{
-						color: "var(--md-sys-color-on-surface-variant)",
-						fontSize: "var(--md-sys-typescale-body-small-size)",
-						lineHeight: "var(--md-sys-typescale-body-small-line-height)",
-						display: "flex",
-						flexDirection: "column",
-						gap: "var(--md-sys-spacing-2)",
-					}}
-				>
-					<p>{ui.llm.unavailable}</p>
-					<details>
-						<summary
-							style={{
-								cursor: "pointer",
-								color: "var(--md-sys-color-primary)",
-							}}
-						>
-							{ui.llm.howToEnable}
-						</summary>
-						<ol
-							style={{
-								marginTop: "var(--md-sys-spacing-2)",
-								paddingLeft: "var(--md-sys-spacing-5)",
-								display: "flex",
-								flexDirection: "column",
-								gap: "var(--md-sys-spacing-1)",
-							}}
-						>
-							<li>
-								{ui.llm.enableStep1Prefix}{" "}
-								<code
-									style={{
-										backgroundColor: "var(--md-sys-color-surface-container)",
-										padding: "0 var(--md-sys-spacing-1)",
-										borderRadius: "var(--md-sys-shape-corner-extra-small)",
-									}}
-								>
-									{ui.llm.enableStep1Flag}
-								</code>{" "}
-								{ui.llm.enableStep1Action}
-							</li>
-							<li>{ui.llm.enableStep2}</li>
-							<li>{ui.llm.enableStep3}</li>
-						</ol>
-					</details>
-				</div>
-			)}
+			{(state.status === "unavailable" || state.status === "no-api") &&
+				!state.result && (
+					<div
+						style={{
+							color: "var(--md-sys-color-on-surface-variant)",
+							fontSize: "var(--md-sys-typescale-body-small-size)",
+							lineHeight: "var(--md-sys-typescale-body-small-line-height)",
+							display: "flex",
+							flexDirection: "column",
+							gap: "var(--md-sys-spacing-2)",
+						}}
+					>
+						<p>{ui.llm.unavailable}</p>
+						<details>
+							<summary
+								style={{
+									cursor: "pointer",
+									color: "var(--md-sys-color-primary)",
+								}}
+							>
+								{ui.llm.howToEnable}
+							</summary>
+							<ol
+								style={{
+									marginTop: "var(--md-sys-spacing-2)",
+									paddingLeft: "var(--md-sys-spacing-5)",
+									display: "flex",
+									flexDirection: "column",
+									gap: "var(--md-sys-spacing-1)",
+								}}
+							>
+								<li>
+									{ui.llm.enableStep1Prefix}{" "}
+									<code
+										style={{
+											backgroundColor: "var(--md-sys-color-surface-container)",
+											padding: "0 var(--md-sys-spacing-1)",
+											borderRadius: "var(--md-sys-shape-corner-extra-small)",
+										}}
+									>
+										{ui.llm.enableStep1Flag}
+									</code>{" "}
+									{ui.llm.enableStep1Action}
+								</li>
+								<li>{ui.llm.enableStep2}</li>
+								<li>{ui.llm.enableStep3}</li>
+							</ol>
+						</details>
+					</div>
+				)}
 
 			{state.status === "downloading" && (
 				<p
