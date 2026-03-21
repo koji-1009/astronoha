@@ -60,7 +60,7 @@ Client directives:
 
 Server Islands (`server:defer`):
 
-Defer server rendering of non-essential components. The page loads with fallback content; the component renders asynchronously via a separate server request.
+Defer server rendering of auxiliary components. The page loads with fallback content; the component renders asynchronously via a separate server request.
 
 When to use frontmatter (default):
 
@@ -170,7 +170,7 @@ export const server = {
 
 Choose the lowest layer that meets the requirement:
 
-1. `<form method="POST">` with PRG — pure HTML. No Action, no JS. Use when POST processing does not require Zod input validation (no user input, or trivial input). POST processes the request, stores results in `Astro.session` if needed, and redirects. This avoids the browser's "resubmit form?" warning on reload. Examples: search, analysis, conversion, logout
+1. `<form method="POST">` with PRG — pure HTML. No Action, no JS. Use when the form carries no user-authored content (logout, deletion by ID, re-processing a previous result). POST processes the request, stores results in `Astro.session` if needed, and redirects. This avoids the browser's "resubmit form?" warning on reload
 2. `<form action={actions.createItem}>` — HTML + Action. Still zero JS. Use when POST accepts user input that requires type-safe Zod validation and structured error handling
 3. Island calls `actions.createItem()` — JS required. Use only when the mutation requires JS to modify the DOM (disable button, show spinner, display error, update list without reload)
 
@@ -208,7 +208,7 @@ Client feedback (crumple zone):
 
 If feedback breaks, the action still completes or fails correctly on the server.
 
-`pages/api/` is only for external consumers (webhook receivers, streaming endpoints, non-JSON protocols) — not for mutations initiated by the client. Mutations with validated user input use Actions; mutations without user input (logout, session clear) use PRG.
+`pages/api/` is only for external consumers (webhook receivers, SSE/streaming) — not for mutations initiated by the client. Client-initiated mutations — including file uploads — use Actions (`accept: "form"` handles FormData with files) with processing logic in `features/*/data/`. Mutations without user input (logout, session clear) use PRG.
 
 ## Security Boundary
 
@@ -267,18 +267,17 @@ import { ClientRouter } from "astro:transitions";
   <ClientRouter />
 </head>
 <body>
-  <Header transition:animate="none" />
-  <Sidebar transition:animate="none" />
-  <main transition:animate="fade">
+  <Header />
+  <Sidebar />
+  <main>
     <slot />
   </main>
 </body>
 ```
 
-* Elements that appear on every page (header, sidebar, navigation): `transition:animate="none"`
-* Content area: `transition:animate="fade"` only
+* Add `<ClientRouter />` to the layout. The default crossfade applies to the entire page — no further directives needed
+* `transition:animate` and `transition:name` are unnecessary for the default crossfade. Specifying them generates per-component `view-transition-name` CSS, requiring individual tuning for each targeted Astro component. Omitting them avoids this overhead
 * Use `astro:page-load` instead of `DOMContentLoaded`
-* Prohibited: `transition:animate="slide"`, `transition:animate="morph"`, multiple `transition:name` on the same page
 * Never call `history.pushState()` or `history.replaceState()` in islands — ClientRouter stores navigation data in `history.state`. Overwriting it breaks browser back/forward. To update URL query params (filters, pagination), use `navigate()` from `astro:transitions/client` or `<a>` with the new query string
 * Disable when the layout component changes (e.g., login → dashboard) — use `window.location.href` for hard navigation instead of `navigate()`
 * Disable for non-HTML responses
@@ -289,11 +288,11 @@ import { ClientRouter } from "astro:transitions";
 src/
   middleware.ts
   pages/
-    api/                    — non-Action endpoints (webhooks, streaming, non-JSON)
+    api/                    — endpoints for external consumers only (webhook receivers, SSE/streaming)
   features/
     {feature}/
       types.ts
-      data/                 — data access, server-only (backend boundary: swap internals without changing callers). Only frontmatter and Action handlers call into data/. Islands must not import from this directory
+      data/                 — data I/O, server-only (backend boundary: swap internals without changing callers). API fetch, file processing, DB queries, storage writes. Only frontmatter and Action handlers call into data/. Islands must not import from this directory
       components/           — .astro (display) + islands (interaction)
   shared/
     layout/                 — AdminLayout, UserLayout

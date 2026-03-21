@@ -56,7 +56,7 @@ if (canonicalUrl.searchParams.get("page") === "1") {
 	</head>
 	<body>
 		<a href="#main-content" class="skip-link">{ui.nav.skipToContent}</a>
-		<header class="site-header" transition:animate="none">
+		<header class="site-header">
 			<nav class="site-nav">
 				<a href="/" class="site-logo">astronoha</a>
 				<ul class="nav-links">
@@ -67,10 +67,8 @@ if (canonicalUrl.searchParams.get("page") === "1") {
 				</ul>
 			</nav>
 		</header>
-		<main id="main-content" transition:animate="fade"><slot /></main>
-		<footer class="site-footer" transition:animate="none">
-			<Attribution />
-		</footer>
+		<main id="main-content"><slot /></main>
+		<footer class="site-footer"><Attribution /></footer>
 		<div class="nav-progress" aria-hidden="true"></div>
 		<script>
 		document.addEventListener("astro:before-preparation", () => {

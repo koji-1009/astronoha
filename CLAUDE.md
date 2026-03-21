@@ -205,3 +205,4 @@ Settings are client-only (localStorage). No server interaction needed.
 * Core functionality works 100% without LLM (CRZ Reliability Layers 1-2).
 * Prompt API calls are contained within React Islands. Nothing sent to server.
 * Non-supporting browsers: disable buttons, show guidance. Chrome stable (desktop) supports Prompt API.
+* AI results are cached in sessionStorage, scoped per URL + query params. This is a cache (CRZ "in-progress data"), not a canonical source — results are re-generated if cleared. Lost on tab close. If a cached result exists on mount, it is displayed immediately without waiting for the availability check.
