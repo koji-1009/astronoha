@@ -38,6 +38,33 @@ Partial failure: when frontmatter fetches from multiple sources, catch each inde
 
 ## Component Decisions
 
+### Page Structure
+
+Pages combine semantic HTML for structure with components at reuse and failure boundaries:
+
+```astro
+<Layout>
+  <section>
+    <h1>{title}</h1>
+    <ItemFilter />
+    <ItemTable items={items} />
+  </section>
+  <aside>
+    <RecentActivity server:defer />
+  </aside>
+</Layout>
+```
+
+The page file shows structure (HTML tags) and composition (components). Rendering logic and data display belong in extracted components.
+
+Extract an Astro component when:
+
+* The same UI block appears on 2+ pages (reuse)
+* A section fetches data independently (enables partial failure pattern)
+* A section has independent failure modes (limits blast radius)
+
+If none apply, inline HTML is sufficient.
+
 Use Astro (.astro) by default:
 
 * Data display (tables, cards, lists)
@@ -208,6 +235,13 @@ Client feedback (crumple zone):
 
 If feedback breaks, the action still completes or fails correctly on the server.
 
+View/Wrapper separation — when an island calls Actions, separate View from integration:
+
+* View (`react/ItemFormView.tsx`): pure React component. Receives data and callbacks as props. No `astro:actions` import
+* Wrapper (`ItemForm.tsx`): imports `astro:actions`, manages state, passes props to View
+
+The wrapper is the crumple zone between UI and server actions. View changes and action logic changes stay independent. Split when the View has enough complexity that framework integration (astro:actions, state management) should not live alongside rendering logic. A single-action button does not need separation.
+
 `pages/api/` is only for external consumers (webhook receivers, SSE/streaming) — not for mutations initiated by the client. Client-initiated mutations — including file uploads — use Actions (`accept: "form"` handles FormData with files) with processing logic in `features/*/data/`. Mutations without user input (logout, session clear) use PRG.
 
 ## Security Boundary
@@ -293,7 +327,8 @@ src/
     {feature}/
       types.ts
       data/                 — data I/O, server-only (backend boundary: swap internals without changing callers). API fetch, file processing, DB queries, storage writes. Only frontmatter and Action handlers call into data/. Islands must not import from this directory
-      components/           — .astro (display) + islands (interaction)
+      components/           — .astro (display) + island wrappers (Action integration)
+        react/              — pure React views (no Astro imports, no framework integration)
   shared/
     layout/                 — AdminLayout, UserLayout
     components/             — project-specific shared components (Pagination, Badge). Built from ui/ primitives
@@ -342,7 +377,9 @@ After applying CRZ principles, review every change against these checks before f
    * Are all exported functions called? Unused initializers, sync functions, or cache hydration calls indicate an over-designed layer.
 4. **Simplicity check**
    * Did the change add a layer, abstraction, or intermediate state? Is that layer actually needed, or does a simpler mechanism (SSR props, direct DOM update, existing browser API) already solve the problem? Remove any layer that exists only to satisfy a principle rather than to solve a real problem.
-5. **Island necessity check**
+5. **Component decomposition check**
+   * Is each page a skeleton of semantic HTML with components at reuse and failure boundaries? Extract when: used on 2+ pages, fetches data independently (partial failure), or has independent failure modes (blast radius). Pages should not contain inline rendering logic that belongs in a component.
+6. **Island necessity check**
    * For each island, list every `useState` call. Can each value be a server prop, URL query param, HTML attribute, CSS rule, or `<script>` DOM call? If yes for all values, the island should be an `.astro` component.
-6. **Document consistency check**
+7. **Document consistency check**
    * Does the change add, remove, or rename a feature, route, or component? If yes, verify that CLAUDE.md, PROJECT.md, and any other project documentation reflect the current state. Deleted features must be removed from documentation.
