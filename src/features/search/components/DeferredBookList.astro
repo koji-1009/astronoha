@@ -14,8 +14,14 @@ interface Props {
 }
 
 const { keyword } = Astro.props;
-const relatedBooks = await searchBooks(keyword, { count: 5 });
-const books = relatedBooks?.items ?? [];
+
+let books: Awaited<ReturnType<typeof searchBooks>>["items"] = [];
+try {
+	const relatedBooks = await searchBooks(keyword, { count: 5 });
+	books = relatedBooks?.items ?? [];
+} catch {
+	// Books are auxiliary content — silent failure, render nothing
+}
 ---
 
 {books.length > 0 && (

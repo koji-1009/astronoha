@@ -1,69 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ui } from "@/i18n/ui";
-import { ErrorBoundary } from "../../../shared/components/ErrorBoundary";
+import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import {
 	type AIStatus,
 	checkAvailability,
 	createSession,
 } from "../lib/chrome-ai";
-
-/**
- * Minimal markdown → HTML for Chrome AI output.
- * Handles: **bold**, *italic*, `code`, unordered lists (* / -), headings (##), paragraphs.
- * Source is local AI model, not user input — no sanitization needed.
- */
-function renderMarkdown(md: string): string {
-	const lines = md.split("\n");
-	const html: string[] = [];
-	let inList = false;
-
-	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i];
-		const trimmed = line.trim();
-
-		if (trimmed === "") {
-			if (inList) {
-				html.push("</ul>");
-				inList = false;
-			}
-			continue;
-		}
-
-		const listMatch = trimmed.match(/^[*-]\s+(.*)/);
-		if (listMatch) {
-			if (!inList) {
-				html.push("<ul>");
-				inList = true;
-			}
-			html.push(`<li>${inlineMarkdown(listMatch[1])}</li>`);
-			continue;
-		}
-
-		if (inList) {
-			html.push("</ul>");
-			inList = false;
-		}
-
-		const headingMatch = trimmed.match(/^(#{1,4})\s+(.*)/);
-		if (headingMatch) {
-			const level = Math.min(headingMatch[1].length + 2, 6);
-			html.push(`<h${level}>${inlineMarkdown(headingMatch[2])}</h${level}>`);
-			continue;
-		}
-
-		html.push(`<p>${inlineMarkdown(trimmed)}</p>`);
-	}
-
-	if (inList) html.push("</ul>");
-	return html.join("");
-}
-
-function inlineMarkdown(text: string): string {
-	return text
-		.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-		.replace(/\*(.+?)\*/g, "<em>$1</em>")
-		.replace(/`(.+?)`/g, "<code>$1</code>");
-}
+import { renderMarkdown } from "../lib/markdown";
 
 type LlmAction = "summary" | "keywords" | "context" | "trend";
 
@@ -96,6 +39,56 @@ const SYSTEM_PROMPTS = {
 	context: (year: number) => ui.llm.promptHistoricalContext(String(year)),
 	trend: (keyword: string) => ui.llm.promptAnalyzeTrend(keyword),
 };
+
+const ACTION_LABELS: Record<LlmAction, { default: string; loading: string }> = {
+	summary: { default: ui.llm.summarize, loading: ui.llm.summarizing },
+	keywords: { default: ui.llm.suggestKeywords, loading: ui.llm.suggesting },
+	context: { default: ui.llm.historicalContext, loading: ui.llm.generating },
+	trend: { default: ui.llm.analyzeTrend, loading: ui.llm.analyzing },
+};
+
+interface ActionArgs {
+	systemPrompt: string;
+	userPrompt: string;
+}
+
+/**
+ * Build system and user prompts for an action.
+ * Returns null when the required data prop is absent (guard).
+ */
+function buildActionArgs(
+	action: LlmAction,
+	props: { speechText?: string; keyword?: string; year?: number },
+): ActionArgs | null {
+	const { speechText, keyword, year } = props;
+	switch (action) {
+		case "summary":
+			return speechText
+				? { systemPrompt: SYSTEM_PROMPTS.summary, userPrompt: speechText }
+				: null;
+		case "keywords":
+			return keyword
+				? {
+						systemPrompt: SYSTEM_PROMPTS.keywords(keyword),
+						userPrompt: `「${keyword}」に関連する検索キーワードを提案してください`,
+					}
+				: null;
+		case "context":
+			return year !== undefined
+				? {
+						systemPrompt: SYSTEM_PROMPTS.context(year),
+						userPrompt: `${year}年の時代背景を教えてください`,
+					}
+				: null;
+		case "trend":
+			return keyword
+				? {
+						systemPrompt: SYSTEM_PROMPTS.trend(keyword),
+						userPrompt: `「${keyword}」の議会での使用頻度の傾向を分析してください`,
+					}
+				: null;
+	}
+}
 
 const MAX_RETRIES = 60;
 const RETRY_INTERVAL_MS = 3000;
@@ -312,27 +305,9 @@ function LlmPanelInner({
 		if (!autoSummary) return;
 		autoRanRef.current = true;
 		const first = enabledActions[0];
-		if (first === "summary" && speechText) {
-			runAction("summary", SYSTEM_PROMPTS.summary, speechText);
-		} else if (first === "keywords" && keyword) {
-			runAction(
-				"keywords",
-				SYSTEM_PROMPTS.keywords(keyword),
-				`「${keyword}」に関連する検索キーワードを提案してください`,
-			);
-		} else if (first === "context" && year !== undefined) {
-			runAction(
-				"context",
-				SYSTEM_PROMPTS.context(year),
-				`${year}年の時代背景を教えてください`,
-			);
-		} else if (first === "trend" && keyword) {
-			runAction(
-				"trend",
-				SYSTEM_PROMPTS.trend(keyword),
-				`「${keyword}」の議会での使用頻度の傾向を分析してください`,
-			);
-		}
+		if (!first) return;
+		const args = buildActionArgs(first, { speechText, keyword, year });
+		if (args) runAction(first, args.systemPrompt, args.userPrompt);
 	}, [
 		state.status,
 		state.loading,
@@ -343,36 +318,10 @@ function LlmPanelInner({
 		runAction,
 	]);
 
-	function handleSummarize() {
-		if (!speechText) return;
-		runAction("summary", SYSTEM_PROMPTS.summary, speechText);
-	}
-
-	function handleKeywords() {
-		if (!keyword) return;
-		runAction(
-			"keywords",
-			SYSTEM_PROMPTS.keywords(keyword),
-			`「${keyword}」に関連する検索キーワードを提案してください`,
-		);
-	}
-
-	function handleContext() {
-		if (year === undefined) return;
-		runAction(
-			"context",
-			SYSTEM_PROMPTS.context(year),
-			`${year}年の時代背景を教えてください`,
-		);
-	}
-
-	function handleTrend() {
-		if (!keyword) return;
-		runAction(
-			"trend",
-			SYSTEM_PROMPTS.trend(keyword),
-			`「${keyword}」の議会での使用頻度の傾向を分析してください`,
-		);
+	function handleAction(action: LlmAction) {
+		const args = buildActionArgs(action, { speechText, keyword, year });
+		if (!args) return;
+		runAction(action, args.systemPrompt, args.userPrompt);
 	}
 
 	if (enabledActions.length === 0) {
@@ -507,54 +456,28 @@ function LlmPanelInner({
 						gap: "var(--md-sys-spacing-2)",
 					}}
 				>
-					{enabledActions.includes("summary") && speechText && (
-						<button
-							type="button"
-							className="outlined"
-							disabled={state.loading}
-							onClick={handleSummarize}
-						>
-							{state.loading && state.activeAction === "summary"
-								? ui.llm.summarizing
-								: ui.llm.summarize}
-						</button>
-					)}
-					{enabledActions.includes("keywords") && keyword && (
-						<button
-							type="button"
-							className="outlined"
-							disabled={state.loading}
-							onClick={handleKeywords}
-						>
-							{state.loading && state.activeAction === "keywords"
-								? ui.llm.suggesting
-								: ui.llm.suggestKeywords}
-						</button>
-					)}
-					{enabledActions.includes("context") && year !== undefined && (
-						<button
-							type="button"
-							className="outlined"
-							disabled={state.loading}
-							onClick={handleContext}
-						>
-							{state.loading && state.activeAction === "context"
-								? ui.llm.generating
-								: ui.llm.historicalContext}
-						</button>
-					)}
-					{enabledActions.includes("trend") && keyword && (
-						<button
-							type="button"
-							className="outlined"
-							disabled={state.loading}
-							onClick={handleTrend}
-						>
-							{state.loading && state.activeAction === "trend"
-								? ui.llm.analyzing
-								: ui.llm.analyzeTrend}
-						</button>
-					)}
+					{enabledActions.map((action) => {
+						const args = buildActionArgs(action, {
+							speechText,
+							keyword,
+							year,
+						});
+						if (!args) return null;
+						const labels = ACTION_LABELS[action];
+						return (
+							<button
+								key={action}
+								type="button"
+								className="outlined"
+								disabled={state.loading}
+								onClick={() => handleAction(action)}
+							>
+								{state.loading && state.activeAction === action
+									? labels.loading
+									: labels.default}
+							</button>
+						);
+					})}
 				</div>
 			)}
 

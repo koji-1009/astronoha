@@ -15,19 +15,32 @@ interface Props {
 }
 
 const { keyword } = Astro.props;
-const relatedBooks = await searchBooks(keyword, { count: 10 });
 
-const carouselBooks = (relatedBooks?.items ?? [])
-	.filter((book) => book.identifier)
-	.map((book) => ({
-		title: book.title,
-		link: book.link,
-		author: book.author ?? "",
-		publisher: book.publisher ?? "",
-		date: book.date ?? "",
-		identifier: book.identifier ?? "",
-		thumbnailUrl: getThumbnailUrl(book.identifier ?? ""),
-	}));
+let carouselBooks: Array<{
+	title: string;
+	link: string;
+	author: string;
+	publisher: string;
+	date: string;
+	identifier: string;
+	thumbnailUrl: string;
+}> = [];
+try {
+	const relatedBooks = await searchBooks(keyword, { count: 10 });
+	carouselBooks = (relatedBooks?.items ?? [])
+		.filter((book) => book.identifier)
+		.map((book) => ({
+			title: book.title,
+			link: book.link,
+			author: book.author ?? "",
+			publisher: book.publisher ?? "",
+			date: book.date ?? "",
+			identifier: book.identifier ?? "",
+			thumbnailUrl: getThumbnailUrl(book.identifier ?? ""),
+		}));
+} catch {
+	// Books are auxiliary content — silent failure, render empty carousel
+}
 ---
 
 <BookCarousel books={carouselBooks} />
