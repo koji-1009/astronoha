@@ -23,19 +23,8 @@ async function applyCloudflareEnv(): Promise<void> {
 	}
 }
 
-export const onRequest = defineMiddleware(async (context, next) => {
+export const onRequest = defineMiddleware(async (_context, next) => {
 	if (!envApplied) await applyCloudflareEnv();
 
-	const response = await next();
-
-	// CDN page cache: all pages render identical HTML for all users.
-	// Color mode applied client-side via localStorage, search target is URL-driven.
-	if (context.request.method === "GET") {
-		response.headers.set(
-			"Cache-Control",
-			"public, s-maxage=3600, stale-while-revalidate=300",
-		);
-	}
-
-	return response;
+	return next();
 });

@@ -18,7 +18,7 @@
 	"dependencies": {
 		"@astrojs/cloudflare": "^13.0.0",
 		"@astrojs/react": "^5.0.0",
-		"astro": "^6.0.0",
+		"astro": "^6.4.6",
 		"fast-xml-parser": "^5.5.5",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0"

@@ -12,7 +12,7 @@ None. Follow all CRZ principles.
 
 ### CRZ Application Notes
 
-* **No authentication.** The "When authentication is required" section of CRZ Security Boundary does not apply. Middleware only applies Cloudflare env bindings and sets CDN cache headers.
+* **No authentication.** The "When authentication is required" section of CRZ Security Boundary does not apply. Middleware only applies Cloudflare env bindings.
 * **Chrome built-in AI.** Per CRZ Component Decisions, the Prompt API is implemented as a Stateful Island (Layer 4) since it requires local state for session management. If this island crashes, core functionality (search, browse, share) remains 100% operational on Layers 1-2.
 
 ## Tech Stack
@@ -197,7 +197,7 @@ Settings are client-only (localStorage). No server interaction needed.
 * **colorMode** ("system" | "light" | "dark"): stored in `localStorage["astronoha_colorMode"]`. Applied via inline `<script>` before first paint to avoid FOUC. Settings page binds `change` events to update localStorage and `data-color-mode` attribute.
 * **autoSummary** (boolean): stored in `localStorage["astronoha_autoSummary"]`. When enabled, Chrome AI automatically runs the primary action on page load (summary on speech detail, keywords on search results, trend on heatmap). The panel is always visible when Chrome AI is available; this setting only controls automatic execution.
 * **searchTarget**: not a setting — URL-driven via `?target=kokkai|teikoku|both` query parameter (default: "both").
-* All pages render identical HTML regardless of user preferences, enabling CDN caching (`s-maxage=3600`).
+* All pages render identical HTML regardless of user preferences. Pages are served without CDN page caching; `/_astro/*` hashed assets get immutable `Cache-Control` auto-injected into `_headers` by @astrojs/cloudflare (13.7.0+).
 
 ## Chrome Built-in AI
 
