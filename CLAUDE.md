@@ -17,11 +17,11 @@ None. Follow all CRZ principles.
 
 ## Tech Stack
 
-* **Framework**: Astro 6.x (SSR, MPA)
+* **Framework**: Astro 7.x (SSR, MPA)
 * **UI Library**: React 19.x (Islands)
 * **Runtime**: Cloudflare Workers (workerd)
 * **Adapter**: @astrojs/cloudflare
-* **Validation**: Zod 4.x (bundled with Astro 6)
+* **Validation**: Zod 4.x (bundled with Astro 7)
 * **Lint / Format**: Biome 2.x
 * **Test**: Vitest
 * **Language**: TypeScript (strictest)
@@ -43,7 +43,7 @@ npm run e2e        # Playwright E2E tests (requires build first)
 npx wrangler d1 migrations apply astronoha-heatmap --local  # Apply D1 migrations (local dev)
 ```
 
-## Astro 6 Specifics
+## Astro 7 Specifics
 
 * `astro dev` runs on workerd runtime. Zero difference between dev and production.
 * `import.meta.env` is inlined at build time. Use `process.env` for runtime environment variables.
@@ -120,7 +120,7 @@ src/
 
 ## Biome Rules
 
-* Biome 2.4+.
+* Biome 2.5+.
 * Enable `react` domain.
 * Enable import organizer.
 * `.astro` files: `experimentalFullHtmlSupportEnabled: true`.

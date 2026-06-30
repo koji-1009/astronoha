@@ -17,7 +17,7 @@
 
 | カテゴリ          | 技術                           |
 | ------------- | ---------------------------- |
-| フレームワーク       | Astro 6 (SSR)                |
+| フレームワーク       | Astro 7 (SSR)                |
 | UI            | React 19 (Islands)           |
 | ランタイム         | Cloudflare Workers (workerd) |
 | DB            | Cloudflare D1 (ヒートマップ)       |

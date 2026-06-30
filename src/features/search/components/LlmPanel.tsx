@@ -58,7 +58,11 @@ interface ActionArgs {
  */
 function buildActionArgs(
 	action: LlmAction,
-	props: { speechText?: string; keyword?: string; year?: number },
+	props: {
+		speechText?: string | undefined;
+		keyword?: string | undefined;
+		year?: number | undefined;
+	},
 ): ActionArgs | null {
 	const { speechText, keyword, year } = props;
 	switch (action) {
@@ -481,7 +485,7 @@ function LlmPanelInner({
 				</div>
 			)}
 
-			{state.error && (
+			{state.error ? (
 				<p
 					style={{
 						color: "var(--md-sys-color-error)",
@@ -492,9 +496,9 @@ function LlmPanelInner({
 				>
 					{state.error}
 				</p>
-			)}
+			) : null}
 
-			{state.result && <ResultContent markdown={state.result} />}
+			{state.result ? <ResultContent markdown={state.result} /> : null}
 		</div>
 	);
 }

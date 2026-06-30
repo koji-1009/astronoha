@@ -37,15 +37,15 @@ try {
 						class="book-link"
 					>
 						<p class="book-title">{book.title}</p>
-						{book.author && (
+						{book.author ? (
 							<p class="book-author">{book.author}</p>
-						)}
-						{book.publisher && (
+						) : null}
+						{book.publisher ? (
 							<p class="book-publisher">{book.publisher}</p>
-						)}
-						{book.date && (
+						) : null}
+						{book.date ? (
 							<p class="book-date">{book.date}</p>
-						)}
+						) : null}
 					</a>
 				</li>
 			))}
