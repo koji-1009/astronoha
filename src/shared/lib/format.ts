@@ -8,13 +8,14 @@
 export function formatDate(dateStr: string | null): string {
 	if (!dateStr) return "";
 	const parts = dateStr.split("-");
-	if (parts.length === 3) {
-		return `${parts[0]}年${Number.parseInt(parts[1], 10)}月${Number.parseInt(parts[2], 10)}日`;
+	const [year, month, day] = parts;
+	if (parts.length === 3 && month !== undefined && day !== undefined) {
+		return `${year}年${Number.parseInt(month, 10)}月${Number.parseInt(day, 10)}日`;
 	}
-	if (parts.length === 2) {
-		return `${parts[0]}年${Number.parseInt(parts[1], 10)}月`;
+	if (parts.length === 2 && month !== undefined) {
+		return `${year}年${Number.parseInt(month, 10)}月`;
 	}
-	return `${parts[0]}年`;
+	return `${year}年`;
 }
 
 /**

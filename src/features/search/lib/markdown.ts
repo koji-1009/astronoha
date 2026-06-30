@@ -33,7 +33,8 @@ export function renderMarkdown(md: string): string {
 				html.push("<ul>");
 				inList = true;
 			}
-			html.push(`<li>${inlineMarkdown(listMatch[1])}</li>`);
+			const [, item = ""] = listMatch;
+			html.push(`<li>${inlineMarkdown(item)}</li>`);
 			continue;
 		}
 
@@ -44,8 +45,9 @@ export function renderMarkdown(md: string): string {
 
 		const headingMatch = trimmed.match(/^(#{1,4})\s+(.*)/);
 		if (headingMatch) {
-			const level = Math.min(headingMatch[1].length + 2, 6);
-			html.push(`<h${level}>${inlineMarkdown(headingMatch[2])}</h${level}>`);
+			const [, hashes = "", content = ""] = headingMatch;
+			const level = Math.min(hashes.length + 2, 6);
+			html.push(`<h${level}>${inlineMarkdown(content)}</h${level}>`);
 			continue;
 		}
 

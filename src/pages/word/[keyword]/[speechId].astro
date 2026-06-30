@@ -118,12 +118,12 @@ function splitParagraphs(text: string): string[] {
 						>
 							{speech.speaker ?? "不明"}
 						</a>
-						{speech.speakerGroup && (
+						{speech.speakerGroup ? (
 							<span class="speaker-group">（{speech.speakerGroup}）</span>
-						)}
-						{speech.speakerPosition && (
+						) : null}
+						{speech.speakerPosition ? (
 							<span class="speaker-position">{speech.speakerPosition}</span>
-						)}
+						) : null}
 					</h1>
 				</header>
 
